@@ -1,0 +1,13 @@
+# macOS
+.DS_Store
+*.DS_Store
+
+# Node modules
+*node_modules
+
+# Logs
+*.log
+
+# Env files
+*.env
+*test.js
