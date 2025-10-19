@@ -10,4 +10,5 @@
 
 # Env files
 *.env
+.env.local
 *test.js

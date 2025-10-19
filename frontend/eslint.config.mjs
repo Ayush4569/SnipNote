@@ -9,23 +9,17 @@ const compat = new FlatCompat({
   baseDirectory: __dirname,
 });
 
-const eslintConfig = {
-  ...compat.config({
-    extends: [
-      "next/core-web-vitals",
-      "next/typescript",
-      "prettier",
-      "plugin:tailwindcss/recommended"
+const eslintConfig = [
+  ...compat.extends("next/core-web-vitals", "next/typescript"),
+  {
+    ignores: [
+      "node_modules/**",
+      ".next/**",
+      "out/**",
+      "build/**",
+      "next-env.d.ts",
     ],
-    plugins: [
-      "prettier",
-    ],
-    rules: {
-      "prettier/prettier": "error",
-      "react/no-escape-entities": "off",
-    }
-
-  })
-}
+  },
+];
 
 export default eslintConfig;
