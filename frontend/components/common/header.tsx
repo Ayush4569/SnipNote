@@ -1,10 +1,10 @@
 import { FileText } from "lucide-react";
-import Link from "next/link";
 import NavLink from "./nav-link";
 import { Button } from "../ui/button";
 
 export default function Header() {
     const isLoggedIn = false;
+
     return (
         <nav className="flex items-center justify-between px-2 container py-4 lg:px-8 mx-auto">
 
