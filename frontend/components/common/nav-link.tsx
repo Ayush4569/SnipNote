@@ -5,7 +5,7 @@ import { usePathname } from "next/navigation";
 
 interface NavLinkProps {
     href: string;
-    children: React.ReactNode;
+    children?: React.ReactNode;
     className?: string;
 }
 export default function NavLink(

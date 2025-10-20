@@ -72,7 +72,7 @@ const googleSignIn = asyncHandler(async (req: Request, res: Response) => {
         await newUser.save();
         res.cookie('refreshToken', refreshToken, refreshTokenOptions)
         res.cookie('accessToken', accessToken, accessTokenOptions)
-        return res.status(200).redirect(`${process.env.FRONTEND_URL}`);
+        return res.status(200).redirect(`${process.env.FRONTEND_URL}/auth/success`);
 
     } catch (error) {
         console.error('Authentication error:', error);
@@ -99,6 +99,7 @@ const getUser = asyncHandler(async (req: Request, res: Response) => {
                 name: user.name,
                 email: user.email,
                 picture: user.picture ?? "",
+                createdAt: user.createdAt
             },
             message: "User fetched successfully",
         });

@@ -27,7 +27,7 @@ app.use(express.urlencoded({ extended: true }));
 app.get('/', (req: Request, res: Response) => {
     res.send('Snipnote Backend is running!');
 });
-app.get('/api/auth',authRoutes)
+app.use('/api/auth',authRoutes)
 
 
 
