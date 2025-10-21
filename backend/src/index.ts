@@ -4,6 +4,7 @@ import cookieParser from 'cookie-parser';
 import { config } from './env';
 import { connectDB } from './database/db';
 import authRoutes from './routes/auth.route';
+import summaryRoutes from './routes/auth.route';
 import { errorHandler } from './utils/apiError';
 const app = express();
 
@@ -28,6 +29,7 @@ app.get('/', (req: Request, res: Response) => {
     res.send('Snipnote Backend is running!');
 });
 app.use('/api/auth',authRoutes)
+app.use('/api/summary',summaryRoutes)
 
 
 

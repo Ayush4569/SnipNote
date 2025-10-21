@@ -6,6 +6,9 @@ const summarySchema = new Schema({
     createdAt: { type: Date, default: Date.now },
     updatedAt: { type: Date, default: Date.now },
     summaryText: { type: String, required: true },
+    tokenUsed :{
+        type : Number
+    },
     status :{
         type: String,
         enum: ["processing", "completed", "failed","none"],
