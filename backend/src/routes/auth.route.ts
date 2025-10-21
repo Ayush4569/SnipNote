@@ -7,6 +7,6 @@ const router = Router();
 router.get('/',authMiddleware,getUser)
 router.get("/google/callback",googleSignIn);
 router.post("/logout",authMiddleware,logoutUser);
-router.post("/refresh-token",authMiddleware,refreshAccessToken);
+router.post("/refresh-token",refreshAccessToken);
 
 export default router;

@@ -4,6 +4,7 @@ import "./globals.css";
 import Header from "@/components/common/header";
 import Footer from "@/components/common/footer";
 import Providers from "./provider";
+import { getTokenStatus } from "./actions/cookies";
 
 const fontSans = FontSans({
   variable: "--font-sans",
@@ -16,18 +17,19 @@ export const metadata: Metadata = {
   description: "Snipnote is an AI powered PDF summarization tool.",
 };
 
-export default function RootLayout({
+export default async function RootLayout({
   children,
 }: Readonly<{
   children: React.ReactNode;
 }>) {
+  const tokenStatus = await getTokenStatus()
   return (
     <html lang="en">
       <body
         className={`${fontSans.variable} font-sans antialiased`}
       >
         <div className="flex flex-col relative min-h-screen">
-            <Providers>
+            <Providers tokenStatus={tokenStatus}>
           <Header />
           <main className="flex-1">
             {children}

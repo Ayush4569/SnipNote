@@ -7,6 +7,7 @@ import CTA from "@/components/home/cta";
 
 
 export default function Home() {
+
   return (
     <div className="relative w-full">
       <BgGradient />

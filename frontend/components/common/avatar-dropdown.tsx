@@ -26,7 +26,7 @@ export function AvatarDropDown({ children }: { children: React.ReactNode }) {
           if (res.data.success) {
             logout()
             toast.success("Logged out successfully.");
-            router.push("/");
+            router.push("/auth/login");
           }
         } catch (error) {
           console.error("Failed to logout:", error);
@@ -39,7 +39,7 @@ export function AvatarDropDown({ children }: { children: React.ReactNode }) {
       }
     return (
         <DropdownMenu>
-            <DropdownMenuTrigger className="group relative cursor-pointer rounded-full ring-2 ring-transparent transition-all duration-200 hover:ring-gray-200 focus:outline-none" asChild>
+            <DropdownMenuTrigger className="group relative cursor-pointer rounded-full ring-2 ring-transparent transition-all duration-200 hover:ring-yellow-600 focus:outline-none" asChild>
                 <div className="overflow-hidden rounded-full">
                     {children}
                 </div>
@@ -56,7 +56,7 @@ export function AvatarDropDown({ children }: { children: React.ReactNode }) {
                 </DropdownMenuLabel>
                 <DropdownMenuSeparator className="bg-[color:var(--border)]" />
                 
-                <DropdownMenuItem className="group cursor-pointer transition-all duration-200 hover:bg-indigo-500/10 focus:bg-indigo-500/10" asChild>
+                <DropdownMenuItem className="group cursor-pointer transition-all duration-100 hover:bg-indigo-500/10 focus:bg-indigo-500/10" asChild>
                 <NavLink href='/upload' > 
                 Upload a PDF
                 </NavLink>
@@ -66,11 +66,11 @@ export function AvatarDropDown({ children }: { children: React.ReactNode }) {
                 
                 <DropdownMenuItem className="p-1" asChild>
                     <Button 
-                        className="w-full justify-start gap-2 bg-red-600/10 text-red-300 hover:bg-red-600/20 hover:text-red-300 border border-red-700/20 hover:border-red-700/40 transition-all duration-200 group"
+                        className="w-full justify-start gap-2 bg-red-600/10 text-red-300 hover:bg-red-600/20 hover:text-red-300 border border-red-700/20 hover:border-red-700/40 transition-all duration-100 group cursor-pointer"
                         variant="ghost"
                         onClick={handleLogOut}
                     >
-                        <LogOut className="h-4 w-4 transition-transform duration-200 group-hover:scale-110" />
+                        <LogOut className="h-4 w-4 transition-transform duration-200 group-hover:scale-110 group-hover:text-white" />
                         Logout
                     </Button>
                 </DropdownMenuItem>

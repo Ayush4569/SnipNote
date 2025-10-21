@@ -1,12 +1,12 @@
 import { User } from "@/types/user";
-import axios from "axios";
-import { ReactNode, createContext, useState, useContext, useEffect } from "react";
+import { ReactNode, createContext, useState, useContext } from "react";
 
 type Status = 'authenticated' | 'unauthenticated' | 'loading';
 
 type AuthContextType = {
     user: User | null
     status: Status
+    setStatus: (status: Status) => void
     login: (user: User) => void
     logout: () => void
     setLoading: () => void
@@ -18,7 +18,7 @@ export function AuthContextProvider(
     { children }: { children: ReactNode }
 ) {
     const [user, setUser] = useState<User | null>(null)
-    const [status, setStatus] = useState<Status>("unauthenticated")
+    const [status, setStatus] = useState<Status>("loading")
     const login = (user: User) => {
         setUser(user)
         setStatus('authenticated')
@@ -28,21 +28,8 @@ export function AuthContextProvider(
         setStatus('unauthenticated')
     }
     const setLoading = () => setStatus('loading');
-    useEffect(() => {
-        const fetchUser = async () => {
-          const {data} = await axios.get(`${process.env.NEXT_PUBLIC_BACKEND_URL}/auth`, {
-            withCredentials:true
-          });
-          if (data.success) {
-            setUser(data.user);
-            console.log("User authenticated:");
-            setStatus('authenticated');
-          }
-        };
-        fetchUser();
-      }, []);
     return (
-        <AuthContext.Provider value={{ user, login, logout, setLoading, status }}>
+        <AuthContext.Provider value={{ user, login, logout, setLoading, status,setStatus }}>
             {children}
         </AuthContext.Provider>
     )
