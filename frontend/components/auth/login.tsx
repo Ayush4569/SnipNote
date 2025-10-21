@@ -49,7 +49,7 @@ export default function Login() {
               className="max-w-5xl flex items-center justify-center gap-3 bg-gray-900 hover:bg-gray-800 text-white px-6 py-6 rounded-lg shadow-md transition-all"
             >
               <Image
-                src="/google-96.png"
+                src="/google.png"
                 alt="Google logo"
                 width={30}
                 height={30}
