@@ -8,6 +8,7 @@ const userSchema = new Schema({
     createdAt: { type: Date, default: Date.now },
     updatedAt: { type: Date, default: Date.now },
     refreshToken: { type: String },
+    isPro: { type: Boolean, default: false },
     pdfSummaryFile: [
         {
             type: Schema.Types.ObjectId,

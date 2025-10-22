@@ -7,12 +7,12 @@ const ai = new GoogleGenAI({
 
 
 export const getSummaryFromGemini = async (pdfContent: string) => {
-    if(!pdfContent || pdfContent.trim() === '' ) {
+    if (!pdfContent || pdfContent.trim() === '') {
         return {
             success: false,
             message: "Empty pdf",
-            summary:null
-        }  
+            summary: null
+        }
     }
     try {
         const response = await ai.models.generateContent({
@@ -37,15 +37,15 @@ export const getSummaryFromGemini = async (pdfContent: string) => {
         return {
             success: true,
             message: "Summary generated",
-            summary:response.text
+            summary: response.text
         }
-    
+
     } catch (error: any) {
         console.log('error using gemini', error);
-            return {
-                success: false,
-                message: error.status === 429 ?  "Exceeded rate limit" : "GEMINI CRASHED",
-                summary:null
-            }
+        return {
+            success: false,
+            message: error.status === 429 ? "Exceeded rate limit" : error.message || "Error generating summary",
+            summary: null
+        }
     }
 }

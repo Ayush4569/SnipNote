@@ -7,6 +7,7 @@ declare global {
                 name: string;
                 email: string;
                 picture?: string | null;
+                isPro: boolean;
             }
         }
     }

@@ -8,6 +8,7 @@ export interface User {
     googleId: string;
     createdAt?: Date;
     updatedAt?: Date;
+    isPro: boolean;
 }
 
 export interface GoogleOAuthPayload {

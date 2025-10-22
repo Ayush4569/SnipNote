@@ -63,6 +63,7 @@ const googleSignIn = asyncHandler(async (req: Request, res: Response) => {
             email: newUser.email,
             picture: newUser.picture || '',
             _id: newUser._id,
+            isPro : newUser.isPro
         }
 
         const accessToken = generateAccessToken(user)
@@ -99,7 +100,8 @@ const getUser = asyncHandler(async (req: Request, res: Response) => {
                 name: user.name,
                 email: user.email,
                 picture: user.picture ?? "",
-                createdAt: user.createdAt
+                createdAt: user.createdAt,
+                isPro : user.isPro
             },
             message: "User fetched successfully",
         });

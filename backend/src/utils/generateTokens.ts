@@ -3,12 +3,13 @@ import { config } from "../env";
 import jwt from "jsonwebtoken";
 
 
-export function generateAccessToken(user: Pick<User, '_id' | 'email' | 'name' | 'picture'>) {
+export function generateAccessToken(user: Pick<User, '_id' | 'email' | 'name' | 'picture' | 'isPro'>) {
     const token = jwt.sign({
         id: user._id,
         email: user.email,
         name: user.name,
         picture: user.picture,
+        isPro : user.isPro,
     },
         config.ACCESS_TOKEN_SECRET as string,
         {
@@ -16,12 +17,13 @@ export function generateAccessToken(user: Pick<User, '_id' | 'email' | 'name' | 
         })
     return token;
 }
-export function generateRefreshToken(user: Pick<User, '_id' | 'email' | 'name' | 'picture'>) {
+export function generateRefreshToken(user: Pick<User, '_id' | 'email' | 'name' | 'picture' | 'isPro'>) {
     const token = jwt.sign({
         id: user._id,
         email: user.email,
         name: user.name,
         picture: user.picture,
+        isPro : user.isPro,
     },
         config.REFRESH_TOKEN_SECRET as string,
         {
@@ -38,6 +40,7 @@ export const decodeRefreshToken = (token: string) => {
             email: string;
             name: string;
             picture: string | null;
+            isPro : boolean;
         }
     } catch (error) {
         return null;
