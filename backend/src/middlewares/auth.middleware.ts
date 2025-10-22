@@ -7,6 +7,7 @@ interface Decoded extends JwtPayload {
     name: string;
     email: string;
     picture: string
+    isPro: boolean
 }
 
 export async function authMiddleware(req: Request, res: Response, next: NextFunction) {

@@ -6,6 +6,9 @@ const summarySchema = new Schema({
     createdAt: { type: Date, default: Date.now },
     updatedAt: { type: Date, default: Date.now },
     summaryText: { type: String, required: true },
+    error:{
+        type: String
+    },
     tokenUsed :{
         type : Number
     },

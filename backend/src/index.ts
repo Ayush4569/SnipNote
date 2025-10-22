@@ -4,7 +4,7 @@ import cookieParser from 'cookie-parser';
 import { config } from './env';
 import { connectDB } from './database/db';
 import authRoutes from './routes/auth.route';
-import summaryRoutes from './routes/auth.route';
+import summaryRoutes from './routes/summary.route';
 import { errorHandler } from './utils/apiError';
 const app = express();
 
