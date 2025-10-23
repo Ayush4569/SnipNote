@@ -11,16 +11,19 @@ const generateSummary = asyncHandler(async (req: Request, res: Response) => {
     throw new CustomError(401, "Unauthorized")
   }
   const { fileUrl,fileName } = req.body;
-  try {
+
     if(!fileUrl || fileUrl.trim() === '') {
       throw new CustomError(400, 'File url is required')
     }
     const newSummary = new Summary({
-      user: req.user.id,
-      fileUrl,
+      userId: req.user.id,
+      pdfUrl:fileUrl,
       fileName,
-      status: 'processing'
+      status: 'processing',
+      summaryText: 'test summary'
     })
+    await newSummary.save()
+    
     const parser = new PDFParse({ url: fileUrl })
     const { text } = await parser.getText();
 
@@ -28,7 +31,9 @@ const generateSummary = asyncHandler(async (req: Request, res: Response) => {
     const refinedText = cleanPDFText(text)
 
     if (!refinedText.trim()) {
-      await newSummary.updateOne({ status: 'failed',error:'The PDF file is empty' })
+     newSummary.status = 'failed'
+     newSummary.error = 'The PDF file is empty'
+      await newSummary.save()
       throw new CustomError(400, 'The PDF file is empty')
     }
     // check for estimated token usage
@@ -39,10 +44,14 @@ const generateSummary = asyncHandler(async (req: Request, res: Response) => {
     if(totalChunks === 1) {
       const { success, summary, status, message } = await getSummaryFromGemini(refinedText);
       if (!success || !summary) {
-        await newSummary.updateOne({ status: 'failed',error: message ?? 'Error generating summary from Gemini' })
+        newSummary.status = 'failed'
+        newSummary.error = message || 'Error generating summary from Gemini'
+        await newSummary.save()
         throw new CustomError(status, message);
       }
-      await newSummary.updateOne({ status: 'completed', summary })
+      newSummary.status = 'completed'
+      newSummary.summaryText = summary
+      await newSummary.save()
       return res.status(200).json({
         success: true,
         message: "Summary generated successfully",
@@ -56,7 +65,9 @@ const generateSummary = asyncHandler(async (req: Request, res: Response) => {
       const prompt = `Summarize part ${i + 1} of ${totalChunks}:\n\n${chunk}`;
       const { message, success, summary, status } = await getSummaryFromGemini(chunk, prompt);
       if (!success || !summary) {
-        await newSummary.updateOne({ status: 'failed' })
+       newSummary.status = 'failed'
+        newSummary.error = message || `Error generating summary for chunk ${i + 1}`
+        await newSummary.save()
         throw new CustomError(status, message)
       }
       summaries.push(summary)
@@ -67,24 +78,21 @@ const generateSummary = asyncHandler(async (req: Request, res: Response) => {
     const { success, summary, status, message } = await getSummaryFromGemini(combinedText, finalPrompt)
 
     if (!success || !summary) {
-      await newSummary.updateOne({ status: 'failed' })
+      newSummary.status = 'failed'
+      newSummary.error = message || 'Error generating final summary from Gemini'
+      await newSummary.save()
       throw new CustomError(status || 500, message || "Error generating summary from Gemini")
     }
 
-    await newSummary.updateOne({ status: 'completed', summary })
+    newSummary.status = 'completed'
+    newSummary.summaryText = summary
+    await newSummary.save()
     return res.status(200).json({
       success: true,
       message: "Summary generated successfully",
       summary
     })
 
-  } catch (error) {
-    console.log('error generating summary', error);
-    return res.status(500).json({
-      success: false,
-      message: "Internal server error"
-    })
-  }
 
 })
 const getSummary = asyncHandler(async (req: Request, res: Response) => {
