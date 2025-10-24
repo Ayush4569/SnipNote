@@ -14,8 +14,8 @@ const summarySchema = new Schema({
     },
     status :{
         type: String,
-        enum: ["processing", "completed", "failed","none"],
-        default: "none"
+        enum: ["processing", "completed", "failed"],
+        default: null
     },
     userId : {
         type: Schema.Types.ObjectId,
