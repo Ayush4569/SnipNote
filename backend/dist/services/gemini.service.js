@@ -1,16 +1,15 @@
-import { GoogleGenAI, ApiError } from "@google/genai";
-import { SUMMARY_SYSTEM_PROMPT } from "../utils/system.prompt";
-
-const ai = new GoogleGenAI({
-    apiKey: process.env.GEMINI_API_KEY as string
-})
-
-
-export const getSummaryFromGemini = async (pdfContent: string, prompt?: string, useSystemPrompt = true) => {
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+exports.getSummaryFromGemini = void 0;
+const genai_1 = require("@google/genai");
+const system_prompt_1 = require("../utils/system.prompt");
+const ai = new genai_1.GoogleGenAI({
+    apiKey: process.env.GEMINI_API_KEY
+});
+const getSummaryFromGemini = async (pdfContent, prompt, useSystemPrompt = true) => {
     try {
         const response = await ai.models.generateContent({
-            model: process.env.MODEL as string || 'gemini-2.0-flash',
-
+            model: process.env.MODEL || 'gemini-2.0-flash',
             contents: [
                 {
                     role: 'user',
@@ -22,21 +21,20 @@ export const getSummaryFromGemini = async (pdfContent: string, prompt?: string, 
                 }
             ],
             config: {
-                ...(useSystemPrompt && { systemInstruction: SUMMARY_SYSTEM_PROMPT }),
+                ...(useSystemPrompt && { systemInstruction: system_prompt_1.SUMMARY_SYSTEM_PROMPT }),
                 temperature: 0.7,
                 maxOutputTokens: 2048
             }
-        })
-        
+        });
         return {
             success: true,
             message: "Summary generated",
             status: 200,
             summary: response.text,
-            tokensUsed : response.usageMetadata?.totalTokenCount || 0
-        }
-
-    } catch (error:any| ApiError) {
+            tokensUsed: response.usageMetadata?.totalTokenCount || 0
+        };
+    }
+    catch (error) {
         console.log('Gemini API Error :', error);
         return {
             success: false,
@@ -45,6 +43,7 @@ export const getSummaryFromGemini = async (pdfContent: string, prompt?: string, 
                 ? "Rate limit exceeded. Please try again later."
                 : error.message || "Error generating summary",
             summary: null
-        }
+        };
     }
-}
+};
+exports.getSummaryFromGemini = getSummaryFromGemini;

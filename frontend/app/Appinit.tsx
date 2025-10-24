@@ -26,7 +26,8 @@ export default function AppInit({
             );
             return res.data.user as UserState;
         },
-        enabled: hasAccessToken
+        enabled: hasAccessToken,
+        refetchOnWindowFocus: false,
     });
 
     useEffect(() => {

@@ -7,12 +7,13 @@ import { cn } from "@/lib/utils";
 import { fileUploadSchema } from "@/schemas/upload.schema";
 import axios, { isAxiosError } from "axios";
 import { Loader2Icon } from "lucide-react";
-import { useState } from "react";
+import { useRef, useState } from "react";
 import { toast } from "sonner";
 
 export default function UploadForm() {
     const [loading, setLoading] = useState(false)
-    const { startUpload, routeConfig } = useUploadThing('pdfUploader', {
+    const uploadInputRef = useRef<HTMLInputElement>(null);
+    const { startUpload } = useUploadThing('pdfUploader', {
         onClientUploadComplete: () => {
             toast.success('File uploaded successfully', { icon: '✅' })
         },
@@ -38,7 +39,8 @@ export default function UploadForm() {
             )
         }
         const response = await startUpload([file])
-        console.log('file uploaded successfully:', response);
+        console.log('Upload response', response);
+        
         if (!response || response.length === 0) {
             toast.error('Error uploading file')
             setLoading(false)
@@ -63,6 +65,7 @@ export default function UploadForm() {
                     :
                     'Error uploading file')
         } finally {
+            uploadInputRef.current!.value = ''
             setLoading(false)
         }
     }
@@ -73,6 +76,7 @@ export default function UploadForm() {
                     id="file"
                     name="file"
                     type="file"
+                    ref={uploadInputRef}
                     accept="application/pdf"
                     required
                     className={cn("file:border-0 file:bg-transparent file:mr-4", loading && 'opacity-50 cursor-not-allowed')}

@@ -2,10 +2,10 @@ import { Schema, model } from "mongoose";
 
 const summarySchema = new Schema({
     pdfUrl: { type: String, required: true },
-    fileName: { type: String, required: true, unique: true },
+    fileName: { type: String, required: true},
     createdAt: { type: Date, default: Date.now },
     updatedAt: { type: Date, default: Date.now },
-    summaryText: { type: String, required: true },
+    summaryText: { type: String, default:null },
     error:{
         type: String
     },

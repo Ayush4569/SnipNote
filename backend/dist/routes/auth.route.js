@@ -1,0 +1,11 @@
+"use strict";
+Object.defineProperty(exports, "__esModule", { value: true });
+const auth_middleware_1 = require("../middlewares/auth.middleware");
+const auth_controller_1 = require("../controller/auth.controller");
+const express_1 = require("express");
+const router = (0, express_1.Router)();
+router.get('/', auth_middleware_1.authMiddleware, auth_controller_1.getUser);
+router.get("/google/callback", auth_controller_1.googleSignIn);
+router.post("/logout", auth_middleware_1.authMiddleware, auth_controller_1.logoutUser);
+router.post("/refresh-token", auth_controller_1.refreshAccessToken);
+exports.default = router;

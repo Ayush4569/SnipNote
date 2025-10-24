@@ -1,21 +1,37 @@
+import { SUMMARY_SYSTEM_PROMPT } from "./system.prompt";
 
 function cleanPDFText(rawText: string): string {
     return rawText
-      .replace(/--\s*\d+\s*of\s*\d+\s*--/gi, '')
-      .replace(/_{3,}|-{3,}/g, '')
-      .replace(/\n{3,}/g, '\n\n')
-      .replace(/[ \t]{2,}/g, ' ')
-      .trim();
-  }
-  
+        .replace(/--\s*\d+\s*of\s*\d+\s*--/gi, '')
+        .replace(/_{3,}|-{3,}/g, '')
+        .replace(/\n{3,}/g, '\n\n')
+        .replace(/[ \t]{2,}/g, ' ')
+        .trim();
+}
 
-function estimateTokens(refinedText: string): number {
-    // 0.7 tokens per word limit
-    // eg text = "This is a sample text."
-    // words  = text.split(/\s+/) = ["This", "is", "a", "sample", "text."] (length = 5)
-    // tokens = Math.ceil(5 * 0.7) = 3.5
-    // return 3.5
-    return Math.ceil(refinedText.split(/\s+/).length * 0.75)
+
+function estimateTokens(refinedText: string): {
+    inputTokens: number;
+    estimatedOutputTokens: number;
+    estimatedTotal: number;
+} {
+    const pdfTokens = Math.ceil(refinedText.split(/\s+/).length * 0.75)
+
+    const systemPromptTokens = Math.ceil(SUMMARY_SYSTEM_PROMPT.split(/\s+/).length * 0.75);
+
+    const wrapperTokens = 75;
+
+    const inputTokens = pdfTokens + systemPromptTokens + wrapperTokens;
+
+    const estimatedOutputTokens = Math.ceil(inputTokens * 0.5);
+
+    const estimatedTotal = inputTokens + estimatedOutputTokens;
+
+    return {
+        inputTokens,
+        estimatedOutputTokens,
+        estimatedTotal
+    }
 
 }
 interface GenerateChunksResult {
@@ -27,18 +43,18 @@ function generateChunks(refinedText: string, isProUser = false): GenerateChunksR
     const maxTotalToken = isProUser ? 100000 : 20000
     const maxTokenPerChunk = isProUser ? 4000 : 2500
     const overlapTokens = 300;
-    const tokens = estimateTokens(refinedText)
+    const {estimatedTotal} = estimateTokens(refinedText)
 
 
-    if (tokens <= maxTotalToken && tokens <= maxTokenPerChunk) {
+    if (estimatedTotal <= maxTotalToken && estimatedTotal <= maxTokenPerChunk) {
         return {
             chunks: [refinedText],
             totalChunks: 1,
-            tokens
+            tokens:estimatedTotal
         }
     }
 
-    if (!isProUser && tokens > maxTotalToken) {
+    if (!isProUser && estimatedTotal > maxTotalToken) {
         const allowedWords = Math.floor(maxTotalToken / 0.75)
         refinedText = refinedText.split(/\s+/).slice(0, allowedWords).join(' ')
     }
@@ -49,7 +65,7 @@ function generateChunks(refinedText: string, isProUser = false): GenerateChunksR
 
     let start = 0;
     while (start < words.length) {
-        const lastWord = Math.min(start + wordsPerChunk ,words.length)
+        const lastWord = Math.min(start + wordsPerChunk, words.length)
         const chunk = words.slice(start, lastWord).join(' ')
         chunks.push(chunk)
         start = lastWord - overlapWords
@@ -59,7 +75,7 @@ function generateChunks(refinedText: string, isProUser = false): GenerateChunksR
     return {
         chunks,
         totalChunks: chunks.length,
-        tokens
+        tokens:estimatedTotal
     }
 
 }
