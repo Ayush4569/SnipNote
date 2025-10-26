@@ -55,21 +55,29 @@ function generateChunks(refinedText: string, isProUser = false): GenerateChunksR
     }
 
     if (!isProUser && estimatedTotal > maxTotalToken) {
-        const allowedWords = Math.floor(maxTotalToken / 0.75)
-        refinedText = refinedText.split(/\s+/).slice(0, allowedWords).join(' ')
+        const allowedWords = Math.floor((maxTotalToken / 0.75)*4)
+        refinedText = refinedText.substring(0,allowedWords)
     }
-    const words = refinedText.split(/\s+/)
     const chunks: string[] = []
-    const wordsPerChunk = Math.floor(maxTokenPerChunk / 0.75);
-    const overlapWords = Math.floor(overlapTokens / 0.75);
+    const charsPerChunk = Math.floor((maxTokenPerChunk / 0.75)*4);
+    const overlapChars = Math.floor((overlapTokens / 0.75) * 4);
 
     let start = 0;
-    while (start < words.length) {
-        const lastWord = Math.min(start + wordsPerChunk, words.length)
-        const chunk = words.slice(start, lastWord).join(' ')
+    while (start < refinedText.length) {
+        const end = Math.min(start + charsPerChunk,refinedText.length)
+
+        let chunk = refinedText.substring(start,end)
+
+        if(end < refinedText.length) {
+            const lastSpace = chunk.lastIndexOf(' ')
+            if(lastSpace > charsPerChunk * 0.8) {
+                chunk = chunk.substring(0,lastSpace)
+            }
+        }
+
         chunks.push(chunk)
-        start = lastWord - overlapWords
-        if (start >= words.length) break;
+        start = end - overlapChars
+        if (start >= refinedText.length) break;
     }
 
     return {
@@ -79,5 +87,75 @@ function generateChunks(refinedText: string, isProUser = false): GenerateChunksR
     }
 
 }
+
+/*
+  // check for estimated token usage
+  const { chunks, tokens, totalChunks } = generateChunks(refinedText,req.user.isPro)
+
+  console.log(`Processing ${totalChunks} chunk(s) with ~${tokens} tokens`);
+
+  if(totalChunks === 1) {
+    const { success, summary, status, message,tokensUsed } = await getSummaryFromGemini(refinedText);
+    refinedText = ''
+    if (!success || !summary) {
+      newSummary.status = 'failed'
+      newSummary.error = message || 'Error generating summary from Gemini'
+      newSummary.tokenUsed = tokensUsed || tokens
+      await newSummary.save()
+      throw new CustomError(status, message);
+    }
+    newSummary.status = 'completed'
+    newSummary.summaryText = summary
+    newSummary.tokenUsed = tokensUsed || tokens
+    await newSummary.save()
+    return res.status(200).json({
+      success: true,
+      message: "Summary generated successfully",
+      summary
+    });
+  }
+
+  const summaries: string[] = []
+  let totalTokens:number = 0
+  for (let [i, chunk] of chunks.entries()) {
+    const prompt = `Summarize part ${i + 1} of ${totalChunks}:\n\n${chunk}`;
+    const { message, success, summary, status,tokensUsed } = await getSummaryFromGemini(chunk, prompt);
+    chunk = ''
+    if (!success || !summary) {
+     newSummary.status = 'failed'
+      newSummary.error = message || `Error generating summary for chunk ${i + 1}`
+      newSummary.tokenUsed = totalTokens + (tokensUsed || 0)
+      await newSummary.save()
+      throw new CustomError(status, message)
+    }
+    totalTokens += tokensUsed || 0
+    summaries.push(summary)
+  }
+
+  refinedText = ''
+  chunks.length = 0
+
+  const finalPrompt = `Combine the following summaries into one coherent, well-structured final summary: ${summaries.join("\n\n")}`;
+  const combinedText = summaries.join("\n\n---\n\n");
+  const { success, summary, status, message,tokensUsed } = await getSummaryFromGemini(combinedText, finalPrompt)
+
+  summaries.length = 0 
+
+  if (!success || !summary) {
+    newSummary.status = 'failed'
+    newSummary.error = message || 'Error generating final summary from Gemini'
+    newSummary.tokenUsed = totalTokens + (tokensUsed || 0)
+    await newSummary.save()
+    throw new CustomError(status || 500, message || "Error generating summary from Gemini")
+  }
+
+  newSummary.status = 'completed'
+  newSummary.summaryText = summary
+  newSummary.tokenUsed = totalTokens + (tokensUsed || 0)
+  await newSummary.save()
+
+  if(global.gc) global.gc()
+*/
+
 
 export { estimateTokens, cleanPDFText, generateChunks };

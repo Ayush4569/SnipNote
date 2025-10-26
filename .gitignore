@@ -12,3 +12,6 @@
 *.env
 .env.local
 *test.js
+
+# Build output
+/dist

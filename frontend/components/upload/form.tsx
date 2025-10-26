@@ -2,6 +2,7 @@
 
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
+import { queryClient } from "@/lib/tanstack";
 import { useUploadThing } from "@/lib/upload-thing";
 import { cn } from "@/lib/utils";
 import { fileUploadSchema } from "@/schemas/upload.schema";
@@ -37,9 +38,10 @@ export default function UploadForm() {
             toast.error(
                 validatedFile.error.flatten().fieldErrors.file?.[0] ?? "Invalid file"
             )
+            setLoading(false)
+            return;
         }
         const response = await startUpload([file])
-        console.log('Upload response', response);
         
         if (!response || response.length === 0) {
             toast.error('Error uploading file')
@@ -57,13 +59,12 @@ export default function UploadForm() {
                 toast.success(
                     data.message || 'File summarized successfully', { icon: '✅' }
                 )
+                queryClient.invalidateQueries({ queryKey: ['summaries'] })
             }
         } catch (error: any) {
             console.log('Error uploading file', error);
             toast.error(
-                isAxiosError(error) ? error.response?.data.message
-                    :
-                    'Error uploading file')
+                isAxiosError(error) ? error.response?.data.message : 'Error uploading file')
         } finally {
             uploadInputRef.current!.value = ''
             setLoading(false)

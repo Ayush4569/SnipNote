@@ -8,7 +8,7 @@ import { Skeleton } from "../ui/skeleton";
 
 export default function Header() {
     const { user,status } = useAuth()
-      console.log('status in header:', status);
+      console.log('User in header:', user, 'Status:', status);
       
     return (
         <nav className="flex items-center justify-between px-2 container py-4 lg:px-8 mx-auto">
@@ -34,10 +34,10 @@ export default function Header() {
           {status !== "loading" && status === "unauthenticated" && (
               <NavLink href='/login'> Log in </NavLink>
           )}
-          {status === "authenticated" && user?.id && (
+          {status === "authenticated" && (
             <AvatarDropDown>
               <Image
-                src={user.picture || '/user-avatar.png'}
+                src={user?.picture || '/user-avatar.png'}
                 alt='User Avatar'
                 height={40}
                 width={40}

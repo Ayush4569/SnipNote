@@ -56,7 +56,7 @@ export function AvatarDropDown({ children }: { children: React.ReactNode }) {
                 </DropdownMenuLabel>
                 <DropdownMenuSeparator className="bg-[color:var(--border)]" />
                 
-                <DropdownMenuItem className="group cursor-pointer transition-all duration-100 hover:bg-indigo-500/10 focus:bg-indigo-500/10" asChild>
+                <DropdownMenuItem className="group cursor-pointer transition-all  duration-100 hover:bg-indigo-500/10 focus:bg-indigo-500/10" asChild>
                 <NavLink href='/upload' > 
                 Upload a PDF
                 </NavLink>
@@ -66,7 +66,7 @@ export function AvatarDropDown({ children }: { children: React.ReactNode }) {
                 
                 <DropdownMenuItem className="p-1" asChild>
                     <Button 
-                        className="w-full justify-start gap-2 bg-red-600/10 text-red-300 hover:bg-red-600/20 hover:text-red-300 border border-red-700/20 hover:border-red-700/40 transition-all duration-100 group cursor-pointer"
+                        className="w-full justify-start gap-2 bg-red-600/10 text-gray-500 hover:bg-red-600/20 hover:text-red-300 border border-red-700/20 hover:border-red-700/40 transition-all duration-100 group cursor-pointer"
                         variant="ghost"
                         onClick={handleLogOut}
                     >

@@ -27,6 +27,7 @@ export const getSummaryFromGemini = async (pdfContent: string, prompt?: string, 
                 maxOutputTokens: 2048
             }
         })
+        console.log('response gemini',response);
         
         return {
             success: true,

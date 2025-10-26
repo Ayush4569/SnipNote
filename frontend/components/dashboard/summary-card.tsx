@@ -4,7 +4,7 @@ import { FileText } from "lucide-react";
 import { cn } from "@/lib/utils";
 import DeleteButton from "./delete-button";
 import { Summary } from "@/types/summary";
-
+import { formatDistanceToNow } from "date-fns";
 export default function SummaryCard(
     {
         _id,
@@ -22,14 +22,16 @@ export default function SummaryCard(
         <div>
             <Card className="relative h-full">
                 <div className="absolute top-2 right-2">
-                    <DeleteButton />
+                    <DeleteButton summaryId={_id} />
                 </div>
                 <Link href={`/summaries/${_id}`} className="block p-4 sm:p-6">
                     <div className="flex flex-col gap-3 sm:gap-4">
                         <SummaryHeader
                             title={fileName}
-                            createdAt={new Date(createdAt).toLocaleDateString()}
-                            fileUrl={fileName} />
+                            createdAt={
+                                formatDistanceToNow(new Date(createdAt), { addSuffix: true })
+                            }
+                            fileUrl={pdfUrl} />
                         <p className="text-gray-600 line-clamp-2 text-sm sm:text-base  pl-2">
                             {summaryText ? summaryText : 'No summary available.'}
                         </p>

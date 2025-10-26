@@ -6,18 +6,19 @@ import { toast } from "sonner"
 
 export const useGetSummaries = (userId:string)=>{
     const pathname = usePathname()
-    return useQuery({
+    return useQuery<Summary[],Error>({
         queryKey:['summaries'],
         queryFn: async ()=>{
             try {
                 const res = await axios.get(`${process.env.NEXT_PUBLIC_BACKEND_URL}/summary`,{
                    withCredentials: true
                 });
-                return res.data.summary as Summary[]
+                return res.data.summaries as Summary[]
             } catch (error) {
                 console.log('Error fetching user summaries', error);
                 const msg = axios.isAxiosError(error) ? error.response?.data.message : "Failed to fetch summaries"
                 toast.error(msg)
+                throw new Error(msg)
             }
         },
         staleTime: 1000 * 60 ,

@@ -1,4 +1,5 @@
 'use client';
+import Loading from '@/app/loading';
 import BgGradient from '@/components/common/bg-gradient';
 import SummaryCard from '@/components/dashboard/summary-card';
 import { Button } from '@/components/ui/button';
@@ -6,10 +7,23 @@ import { useAuth } from '@/context/auth.context';
 import { useGetSummaries } from '@/hooks/useGetSummaries';
 import { ArrowRight, Plus } from 'lucide-react';
 import Link from 'next/link';
+import EmptySummaryState from './empty-summary';
+import { Summary } from '@/types/summary';
+
 export default function DashboardComponent() {
-    const {user} = useAuth()
+    const { user } = useAuth()
     const uploadLimit = 5;
-    const { data: summaries = [] } = useGetSummaries(user?.id || '');
+
+    const { data: summaries = [], isPending, isError, error } = useGetSummaries(user?.id || '');
+
+    if (isPending) {
+        return <Loading />
+    }
+    else if (isError) {
+        return <div className='container mx-auto p-4'>
+            <p className='text-red-600'>Error loading summaries: {error?.message}</p>
+        </div>
+    }
     return (
         <main className="min-h-screen">
             <BgGradient className="from-emerald-200 via-teal-200 to-cyan-200" />
@@ -46,20 +60,22 @@ export default function DashboardComponent() {
                         </div>
                     </div>
 
-                    <div className='grid grid-cols-1 md:gd-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 sm'>
-                        {
-                            summaries.length === 0 ? (
-                                <p className='text-gray-600'>No summaries found. Start by uploading a PDF to generate your first summary!</p>
-                            ) : (
-                                summaries.map((item) => (
-                                    <SummaryCard
-                                        key={item._id}
-                                        {...item}
-                                    />
-                                ))
-                            )
-                        }
-                    </div>
+                    {
+                        summaries.length === 0 ? <EmptySummaryState /> : (
+                            <div className='grid grid-cols-1 md:gd-cols-2 lg:grid-cols-3 gap-4 sm:gap-6 sm'>
+                                {
+                                    summaries?.map((item) => (
+                                        <SummaryCard
+                                            key={item._id}
+                                            {...item}
+                                        />
+                                    ))
+                                }
+                            </div>
+                        )
+                    }
+
+
                 </div>
             </div>
         </main>
