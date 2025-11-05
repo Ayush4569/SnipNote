@@ -3,12 +3,12 @@ import { CustomError } from '../utils/apiError';
 import { PDFParse } from 'pdf-parse';
 import { asyncHandler } from '../utils/asyncHandler';
 import { getSummaryFromGemini } from '../services/gemini.service';
-import { cleanPDFText, generateChunks } from '../utils/pdf.tools';
+import { cleanPDFText } from '../utils/pdf.tools';
 import { Summary } from '../models/summary.model';
 import { fileUploadSchema } from '../schemas/upload';
 import { logMemoryUsage } from '../utils/memory.usage';
 import { User } from '../models/user.model';
-
+import mongoose from 'mongoose';
 const generateSummary = asyncHandler(async (req: Request, res: Response) => {
   if (!req.user || !req.user.id) {
     throw new CustomError(401, "Unauthorized")
@@ -36,17 +36,24 @@ const generateSummary = asyncHandler(async (req: Request, res: Response) => {
     throw new CustomError(400, "Invalid file upload data");
   }
   const newSummary = new Summary({
-    userId: req.user.id,
+    userId: user.id,
     pdfUrl: fileUrl,
     fileName,
     status: 'processing'
   })
   await newSummary.save()
 
-  const parser = new PDFParse({ url: fileUrl })
-  const { total: pages } = await parser.getInfo({ parsePageInfo: true })
-
-
+  let parser: PDFParse;
+  let pages: number = 0;
+  try {
+    parser = new PDFParse({ url: fileUrl })
+    pages = (await parser.getInfo({ parsePageInfo: true })).total
+  } catch (error) {
+    newSummary.status = 'failed'
+    newSummary.error = 'Error processing PDF file'
+    await newSummary.save()
+    throw new CustomError(500, 'Error processing PDF file')
+  }
 
   if (pages === 0) {
     newSummary.status = 'failed'
@@ -54,14 +61,14 @@ const generateSummary = asyncHandler(async (req: Request, res: Response) => {
     await newSummary.save()
     throw new CustomError(400, 'The PDF file is empty')
   }
-  if (!req.user.isPro && pages > 10) {
+  if (!user.isPro && pages > 10) {
     newSummary.status = 'failed'
     newSummary.error = 'Free tier users can only summarize PDFs with up to 10 pages'
     await newSummary.save()
     throw new CustomError(400, 'Free tier users can only summarize PDFs with up to 10 pages. Please upgrade to Pro for larger documents.')
   }
 
-  if (req.user.isPro && pages > 100) {
+  if (user.isPro && pages > 100) {
     newSummary.status = 'failed'
     newSummary.error = 'Pro users can only summarize PDFs with up to 100 pages'
     await newSummary.save()
@@ -73,30 +80,52 @@ const generateSummary = asyncHandler(async (req: Request, res: Response) => {
   logMemoryUsage('After PDF parse');
   let refinedText: string = cleanPDFText(text)
 
+  if (!refinedText.trim()) {
+    newSummary.status = 'failed'
+    newSummary.error = 'PDF contains invalid content'
+    await newSummary.save()
+    throw new CustomError(400, 'PDF contains invalid content')
+  }
 
   const { success, summary, status, message, tokensUsed } = await getSummaryFromGemini(refinedText)
 
-
+  refinedText = ''
+  logMemoryUsage('After summary generation');
   if (!success || !summary) {
     newSummary.status = 'failed'
     newSummary.error = message || 'Error generating final summary from Gemini'
-    newSummary.tokenUsed = (tokensUsed || 0)
-    await newSummary.save()
-    throw new CustomError(status || 500, message || "Error generating summary from Gemini")
-  } else {
-    newSummary.status = 'completed'
-    newSummary.summaryText = summary
-    newSummary.tokenUsed = (tokensUsed || 0)
- 
-    if (!user.isPro && user.pdfPerMonth > 0) {
-      user.pdfPerMonth -= 1
-    }
-    else if (user.isPro && user.pdfPerMonth > 0) {
-      user.pdfPerMonth -= 1
-    }
+    newSummary.tokenUsed = (tokensUsed)
 
-    await user.save()
+    await newSummary.save()
+
+    throw new CustomError(status || 500, message || "Error generating summary from Gemini")
   }
+
+  const session = await mongoose.startSession();
+  try {
+    await session.withTransaction(async () => {
+      newSummary.status = 'completed'
+      newSummary.summaryText = summary
+      newSummary.tokenUsed = (tokensUsed)
+      await newSummary.save()
+      if (!newSummary.summaryText) {
+        throw new Error('Summary text is empty after generation')
+      }
+      if (!user.isPro && user.pdfPerMonth > 0) {
+        user.pdfPerMonth -= 1
+      }
+      else if (user.isPro && user.pdfPerMonth > 0) {
+        user.pdfPerMonth -= 1
+      }
+      await user.save()
+    })
+  } catch (error: any) {
+    console.error('Transaction failed:', error.message);
+  } finally {
+    session.abortTransaction()
+  }
+
+  logMemoryUsage('After saving summary to DB');
 
   return res.status(200).json({
     success: true,
