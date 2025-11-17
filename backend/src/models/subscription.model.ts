@@ -37,11 +37,11 @@ const subscriptionSchema: Schema<subscription> = new Schema({
     plan: {
         type: String,
         enum: ['basic', 'pro'],
-        required: [true, 'plan is required']
+        default:'basic'
     },
     amount: {
         type: Number,
-        required: [true, 'amount is required']
+        default : 0
     },
     currency: {
         type: String,
@@ -60,19 +60,13 @@ const subscriptionSchema: Schema<subscription> = new Schema({
         type: Number,
         default: 0
     },
-    paymentMethod: {
-        type: String,
-        required: [true, 'payment method is required']
-    },
+    paymentMethod:  String,
     status: {
         type: String,
         enum: ['active', 'expired', 'cancelled', 'failed', 'pending'],
         default: 'active'
     },
-    expiresAt: {
-        type: Date,
-        required: [true, 'expiration date is required']
-    }
+    expiresAt: Date,
 }, { timestamps: true })
 
 subscriptionSchema.index({ userId: 1, status: 1 })
