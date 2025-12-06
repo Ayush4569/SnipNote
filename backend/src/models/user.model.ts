@@ -1,6 +1,23 @@
-import { Schema, model } from "mongoose";
+import { Schema, model,Document, Model, ClientSession } from "mongoose";
 
-const userSchema = new Schema({
+interface UserMethods {
+    incrementPdfUsage:(session:ClientSession)=>Promise<this>
+}
+interface user extends UserMethods, Document {
+    name: string
+    email: string
+    picture?: string
+    googleId: string
+    createdAt: Date
+    updatedAt: Date
+    refreshToken?: string
+    isPro: boolean
+    pdfPerMonth :number
+    pdfSummaryFile: Schema.Types.ObjectId[]
+    subscriptionId ?:string
+}
+
+const userSchema = new Schema<user>({
     name: { type: String, required: true },
     email: { type: String, required: true, unique: true },
     picture: { type: String },
@@ -22,4 +39,9 @@ const userSchema = new Schema({
     subscriptionId :String
 }, { timestamps: true })
 
-export const User = model("User", userSchema);
+userSchema.methods.incrementPdfUsage = async function(session?:ClientSession){
+    if(this.pdfPerMonth <=0) return this;
+    this.pdfPerMonth -=1;
+    return this.save(session ? {session} : {});   
+}
+export const User = model<user,Model<user,{},UserMethods>>("User", userSchema);

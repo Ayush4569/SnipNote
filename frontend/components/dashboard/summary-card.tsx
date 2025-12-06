@@ -24,7 +24,7 @@ export default function SummaryCard(
                 <div className="absolute top-2 right-2">
                     <DeleteButton summaryId={_id} />
                 </div>
-                <Link href={`/summaries/${_id}`} className="block p-4 sm:p-6">
+                <Link href={`/summary/${_id}`} className="block p-4 sm:p-6">
                     <div className="flex flex-col gap-3 sm:gap-4">
                         <SummaryHeader
                             title={fileName}

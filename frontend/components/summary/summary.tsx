@@ -1,3 +1,4 @@
+'use client';
 import { FileText } from "lucide-react";
 import BgGradient from "../common/bg-gradient";
 import SummaryHeader from "./summary-header";
@@ -16,8 +17,7 @@ function SourceInfo({fileName}:{fileName:string}) {
 
 export default function SummaryComponent() {
     const {id} = useParams();
-    const {data,isError,error,isPending} = useGetSummaryById({userId:'',summaryId:id as string});
-
+    const {data,isError,error,isPending} = useGetSummaryById({summaryId:id as string});
     if (isPending) {
         return <Loading />;
     }

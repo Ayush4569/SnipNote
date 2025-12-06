@@ -40,15 +40,15 @@ const createSubscription = asyncHandler(async (req: Request, res: Response) => {
         }
     }
     const customerEmail = generateSafeEmail(email)
-    
+
     const newCustomer = await razorpayService.customers.create({
-        email:customerEmail,
+        email: customerEmail,
         name,
         notes: {
             userId: new mongoose.Types.ObjectId(id).toString()
         }
     })
-    console.log('newCustomer',newCustomer);
+    console.log('newCustomer', newCustomer);
     const subscription = await razorpayService.subscriptions.create({
         plan_id: process.env.RAZORPAY_PLAN_ID!,
         customer_notify: 1,
@@ -57,8 +57,8 @@ const createSubscription = asyncHandler(async (req: Request, res: Response) => {
             userId: new mongoose.Types.ObjectId(id).toString(),
         },
     })
-    console.log('subscription',subscription);
-    
+    console.log('subscription', subscription);
+
     await Subscription.create({
         razorPaySubscriptionId: subscription.id,
         razorpayPlanId: process.env.RAZORPAY_PLAN_ID!,
@@ -116,8 +116,8 @@ const webhook = async (req: Request, res: Response) => {
 
         const data = JSON.parse(rawBody);
         const event = data.event;
-        console.log('data',data);
-        
+        console.log('data', data);
+
 
         if (event === "subscription.activated") {
             const sub = data.payload.subscription.entity;
@@ -133,13 +133,13 @@ const webhook = async (req: Request, res: Response) => {
                     status: "active",
                     startAt: new Date(sub.start_at * 1000),
                     renewAt: new Date(sub.charge_at * 1000),
-                    expiresAt:new Date(sub.charge_at * 1000)
+                    expiresAt: new Date(sub.charge_at * 1000)
                 }
             );
 
             await User.updateOne(
                 { _id: sub.notes.userId },
-                { isPro: true,subscriptionId: sub.id }
+                { isPro: true, subscriptionId: sub.id }
             );
         }
 
@@ -154,7 +154,7 @@ const webhook = async (req: Request, res: Response) => {
             await User.updateOne(
                 { subscriptionId: sub.id },
                 { isPro: false }
-              );
+            );
         }
 
         if (event === "payment.captured") {
@@ -170,37 +170,37 @@ const webhook = async (req: Request, res: Response) => {
                     paymentMethod: payment.method,
                     status: "active",
                     renewAt: nextRenewal,
-                    expiresAt:nextRenewal
+                    expiresAt: nextRenewal
                 }
             );
 
             await User.updateOne(
                 { subscriptionId: payment.subscription_id },
                 { isPro: true }
-              );
+            );
         }
         if (event === "payment.failed") {
             const payment = data.payload.payment.entity;
-          
+
             await Subscription.updateOne(
-              { razorPaySubscriptionId: payment.subscription_id },
-              { status: "failed" }
+                { razorPaySubscriptionId: payment.subscription_id },
+                { status: "failed" }
             );
-          }
-          if (event === "subscription.halted") {
+        }
+        if (event === "subscription.halted") {
             const sub = data.payload.subscription.entity;
-          
+
             await Subscription.updateOne(
-              { razorPaySubscriptionId: sub.id },
-              { status: "halted" }
+                { razorPaySubscriptionId: sub.id },
+                { status: "halted" }
             );
-          
+
             await User.updateOne(
-              { subscriptionId: sub.id },
-              { isPro: false }
+                { subscriptionId: sub.id },
+                { isPro: false }
             );
-          }
-        
+        }
+
 
         return res.status(200).json({ success: true });
 

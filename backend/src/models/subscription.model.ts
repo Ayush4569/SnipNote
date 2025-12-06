@@ -1,9 +1,9 @@
-import { Schema, model, Document, Model } from "mongoose";
+import { Schema, model, Document, Model, ClientSession } from "mongoose";
 
 interface subscriptionMethods {
     canGeneratePdf: () => boolean
     isPlanExpired: () => boolean
-    incrementPdfUsage: () => void
+    incrementPdfUsage: (session:ClientSession) => Promise<this>
 }
 
 interface subscription extends subscriptionMethods, Document {
@@ -88,9 +88,9 @@ subscriptionSchema.methods.canGeneratePdf = function () {
         !this.isPlanExpired() &&
         this.pdfUsed < this.pdfLimit
 }
-subscriptionSchema.methods.incrementPdfUsage = async function () {
+subscriptionSchema.methods.incrementPdfUsage = async function (session?:ClientSession) {
     this.pdfUsed++
-    return await this.save()
+    return  this.save(session ? { session } : {});
 }
 
 

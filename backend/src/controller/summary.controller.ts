@@ -9,6 +9,7 @@ import { fileUploadSchema } from '../schemas/upload';
 
 import { User } from '../models/user.model';
 import mongoose from 'mongoose';
+import { Subscription } from '../models/subscription.model';
 const generateSummary = asyncHandler(async (req: Request, res: Response) => {
   if (!req.user || !req.user.id) {
     throw new CustomError(401, "Unauthorized")
@@ -23,10 +24,14 @@ const generateSummary = asyncHandler(async (req: Request, res: Response) => {
     throw new CustomError(403, 'You have reached the monthly limit of PDF summaries. Please upgrade to Pro for more access.')
   }
 
-  // TODO : change this limit based on subscription plan
-  // if(user.isPro && user.pdfPerMonth <=0) {
-  //   throw new CustomError(403, 'You have reached the monthly limit of PDF summaries for Pro users. Please contact support for more access.')
-  // }
+
+  let premiumUser = null;
+  if(user.isPro) {
+     premiumUser = await Subscription.findOne({ userId: user.id, status: 'active' })
+    if (premiumUser && premiumUser.canGeneratePdf()){
+      throw new CustomError(403, 'You have reached the monthly limit of PDF summaries for Pro users. Please contact support for more access.')
+    }
+  }
 
   const { fileUrl, fileName } = req.body;
 
@@ -68,11 +73,11 @@ const generateSummary = asyncHandler(async (req: Request, res: Response) => {
     throw new CustomError(400, 'Free tier users can only summarize PDFs with up to 10 pages. Please upgrade to Pro for larger documents.')
   }
 
-  if (user.isPro && pages > 100) {
+  if (user.isPro && pages > 50) {
     newSummary.status = 'failed'
     newSummary.error = 'Pro users can only summarize PDFs with up to 100 pages'
     await newSummary.save()
-    throw new CustomError(400, 'Pro users can only summarize PDFs with up to 100 pages')
+    throw new CustomError(400, 'Pro users can only summarize PDFs with up to 50 pages')
   }
 
   const { text } = await parser.getText();
@@ -101,27 +106,27 @@ const generateSummary = asyncHandler(async (req: Request, res: Response) => {
   const session = await mongoose.startSession();
   try {
     await session.withTransaction(async () => {
-      newSummary.status = 'completed'
-      newSummary.summaryText = summary
-      newSummary.tokenUsed = (tokensUsed)
-      await newSummary.save()
-      if (!newSummary.summaryText) {
-        throw new Error('Summary text is empty after generation')
+      newSummary.$session(session);
+      user.$session(session);
+      premiumUser?.$session(session);
+  
+      newSummary.status = 'completed';
+      newSummary.summaryText = summary;
+      newSummary.tokenUsed = tokensUsed;
+      await newSummary.save({ session });
+  
+      if (user.isPro && premiumUser) {
+        await premiumUser.incrementPdfUsage(session);
+      } else {
+        await user.incrementPdfUsage(session);
       }
-      if (!user.isPro && user.pdfPerMonth > 0) {
-        user.pdfPerMonth -= 1
-      }
-      else if (user.isPro && user.pdfPerMonth > 0) {
-        user.pdfPerMonth -= 1
-      }
-      await user.save()
-    })
+    });
   } catch (error: any) {
     console.error('Transaction failed:', error.message);
+    throw new CustomError(500, 'Error finalizing summary generation')
   } finally {
-    session.abortTransaction()
+    session.endSession()
   }
-
 
   return res.status(200).json({
     success: true,
@@ -143,7 +148,7 @@ const getSummary = asyncHandler(async (req: Request, res: Response) => {
   }
   return res.status(200).json({
     success: true,
-    summary:{
+    summary: {
       ...summary.toObject(),
       wordCount: summary.summaryText ? summary.summaryText.split(' ').length : 0
     }
