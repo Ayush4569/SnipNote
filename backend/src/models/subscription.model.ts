@@ -19,6 +19,9 @@ interface subscription extends subscriptionMethods, Document {
     paymentMethod: string
     status: string
     expiresAt: Date
+    startAt: Date
+    renewsAt: Date
+    lastPaymentId: string
 }
 
 const subscriptionSchema: Schema<subscription> = new Schema({
@@ -37,11 +40,11 @@ const subscriptionSchema: Schema<subscription> = new Schema({
     plan: {
         type: String,
         enum: ['basic', 'pro'],
-        default:'basic'
+        default: 'basic'
     },
     amount: {
         type: Number,
-        default : 0
+        default: 0
     },
     currency: {
         type: String,
@@ -60,12 +63,15 @@ const subscriptionSchema: Schema<subscription> = new Schema({
         type: Number,
         default: 0
     },
-    paymentMethod:  String,
+    paymentMethod: String,
     status: {
         type: String,
-        enum: ['active', 'expired', 'cancelled', 'failed', 'pending'],
+        enum: ['active', 'expired', 'cancelled', 'failed', 'pending', 'halted'],
         default: 'active'
     },
+    startAt: Date,
+    renewsAt: Date,
+    lastPaymentId: String,
     expiresAt: Date,
 }, { timestamps: true })
 

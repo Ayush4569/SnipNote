@@ -8,4 +8,5 @@ export interface Summary {
     error?: string;
     tokenUsed?: number;
     status?: "processing" | "completed" | "failed" | null;
+    wordCount?: number;
 }

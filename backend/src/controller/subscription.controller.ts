@@ -3,16 +3,16 @@ import { asyncHandler } from "../utils/asyncHandler";
 import { CustomError } from "../utils/apiError";
 import { Subscription } from "../models/subscription.model";
 import { razorpayService } from "../services/razorpay.service";
-import { User } from "models/user.model";
+import { User } from "../models/user.model";
 import mongoose from "mongoose";
 import crypto from 'crypto'
 import { addMonths } from "date-fns";
+import { generateSafeEmail } from "../utils/generateSafeEmail";
 
 const createSubscription = asyncHandler(async (req: Request, res: Response) => {
     if (!req.user || !req.user.id || !req.user.email) {
         throw new CustomError(400, 'Unauthorized')
     }
-
 
     const { id, name, email } = req.user
 
@@ -39,15 +39,16 @@ const createSubscription = asyncHandler(async (req: Request, res: Response) => {
             throw new CustomError(500, 'Failed to cleanup existing subscription')
         }
     }
-
+    const customerEmail = generateSafeEmail(email)
+    
     const newCustomer = await razorpayService.customers.create({
-        email,
+        email:customerEmail,
         name,
         notes: {
             userId: new mongoose.Types.ObjectId(id).toString()
         }
     })
-
+    console.log('newCustomer',newCustomer);
     const subscription = await razorpayService.subscriptions.create({
         plan_id: process.env.RAZORPAY_PLAN_ID!,
         customer_notify: 1,
@@ -56,11 +57,12 @@ const createSubscription = asyncHandler(async (req: Request, res: Response) => {
             userId: new mongoose.Types.ObjectId(id).toString(),
         },
     })
-
+    console.log('subscription',subscription);
+    
     await Subscription.create({
         razorPaySubscriptionId: subscription.id,
         razorpayPlanId: process.env.RAZORPAY_PLAN_ID!,
-        razorpayCustomerId: subscription.customer_id,
+        razorpayCustomerId: newCustomer.id,
         userId: id,
         status: "pending",
         plan: 'pro'
@@ -114,57 +116,91 @@ const webhook = async (req: Request, res: Response) => {
 
         const data = JSON.parse(rawBody);
         const event = data.event;
-
+        console.log('data',data);
+        
 
         if (event === "subscription.activated") {
             const sub = data.payload.subscription.entity;
+            if (!sub.notes?.userId) {
+                console.error("Missing userId in subscription notes");
+                res.status(400).json({ success: false, message: "Missing userId" });
+                return;
 
+            }
             await Subscription.updateOne(
-                { subscriptionId: sub.id },
+                { razorPaySubscriptionId: sub.id },
                 {
                     status: "active",
                     startAt: new Date(sub.start_at * 1000),
-                    renewAt: new Date(sub.charge_at * 1000)
+                    renewAt: new Date(sub.charge_at * 1000),
+                    expiresAt:new Date(sub.charge_at * 1000)
                 }
             );
 
             await User.updateOne(
                 { _id: sub.notes.userId },
-                { isPro: true }
+                { isPro: true,subscriptionId: sub.id }
             );
         }
 
 
         if (event === "subscription.cancelled") {
             const sub = data.payload.subscription.entity;
-
             await Subscription.updateOne(
                 { subscriptionId: sub.id },
                 { status: "cancelled" }
             );
 
             await User.updateOne(
-                { _id: sub.notes.userId },
+                { subscriptionId: sub.id },
                 { isPro: false }
-            );
+              );
         }
-
 
         if (event === "payment.captured") {
             const payment = data.payload.payment.entity;
+            const nextRenewal = addMonths(new Date(payment.created_at * 1000), 1);
 
             await Subscription.updateOne(
-                { subscriptionId: payment.notes.subscription_id },
+                { razorPaySubscriptionId: payment.subscription_id },
                 {
                     lastPaymentId: payment.id,
                     amount: payment.amount,
                     currency: payment.currency,
-                    method: payment.method,
+                    paymentMethod: payment.method,
                     status: "active",
-                    expiresAt: addMonths(new Date(), 1)
+                    renewAt: nextRenewal,
+                    expiresAt:nextRenewal
                 }
             );
+
+            await User.updateOne(
+                { subscriptionId: payment.subscription_id },
+                { isPro: true }
+              );
         }
+        if (event === "payment.failed") {
+            const payment = data.payload.payment.entity;
+          
+            await Subscription.updateOne(
+              { razorPaySubscriptionId: payment.subscription_id },
+              { status: "failed" }
+            );
+          }
+          if (event === "subscription.halted") {
+            const sub = data.payload.subscription.entity;
+          
+            await Subscription.updateOne(
+              { razorPaySubscriptionId: sub.id },
+              { status: "halted" }
+            );
+          
+            await User.updateOne(
+              { subscriptionId: sub.id },
+              { isPro: false }
+            );
+          }
+        
 
         return res.status(200).json({ success: true });
 

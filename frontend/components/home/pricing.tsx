@@ -1,6 +1,12 @@
+'use client'
 import { cn } from "@/lib/utils";
 import { ArrowRight, CheckLineIcon } from "lucide-react";
-import Link from "next/link";
+import { Button } from "../ui/button";
+import { useState } from "react";
+import { toast } from "sonner";
+import axios, { AxiosError, isAxiosError } from "axios";
+import { useAuth } from "@/context/auth.context";
+import { queryClient } from "@/lib/tanstack";
 
 type Plan = {
     id: string,
@@ -13,29 +19,38 @@ const plans: Plan[] = [
     {
         id: "basic",
         name: "Basic",
-        price: 795,
-        description: "For individuals for occasional use",
+        price: 0,
+        description: "For individuals trial use",
         features: [
             "5 PDF summaries per month",
-            "Standard processing",
-            "Email support"
+            "Max PDF size 7MB",
+            "Max 10 pages per PDF"
         ]
     },
     {
         id: "pro",
         name: "Pro",
-        price: 1600,
-        description: "For professionals and teams",
+        price: 799,
+        description: "For frequent users",
         features: [
-            "Unlimited PDF summaries",
-            "Priority processing",
+            "20 PDF summaries per month",
+            "Max PDF size 20MB",
+            "Max 30 pages per PDF",
             "24/7 Support",
-            "Markdown export"
         ]
     }
 ]
-
+const loadRazorpayScript = () => {
+    return new Promise((resolve) => {
+      const script = document.createElement("script");
+      script.src = "https://checkout.razorpay.com/v1/checkout.js";
+      script.onload = () => resolve(true);
+      script.onerror = () => resolve(false);
+      document.body.appendChild(script);
+    });
+  };
 export default function Pricing() {
+    
     return (
         <section className="overflow-hidden relative" id="pricing">
             <div className="py-12 lg:py-24 max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 lg:pt-12">
@@ -63,6 +78,84 @@ function PlanCard(
         features
     }: Plan
 ) {
+    const [loading, setLoading] = useState<boolean>(false);
+    const {user} = useAuth()
+    const handleSubscribe = async () => {
+        
+        if(!user) {
+          toast.error("You must be logged in to subscribe");
+          return;
+        }
+        setLoading(true);
+        try {
+          const isLoaded = await loadRazorpayScript();
+          if (!isLoaded) {
+            toast.error("Failed to load Razorpay SDK");
+            setLoading(false);
+            return;
+          }
+    
+          const { data } = await axios.post(
+            `${process.env.NEXT_PUBLIC_BACKEND_URL}/subscriptions`,
+            null,
+            {
+              withCredentials: true,
+            }
+          );
+    
+          const options = {
+            key: data.keyId,
+            subscription_id: data.subscriptionId,
+            name: "Snipnote Pro",
+            description: "Get more AI summaries",
+            theme: { color: "#6366F1" },
+            handler: function () {
+              toast.success("Subscription successfull!");
+              window.location.href = "/?subscribed=true";
+            },
+            modal: {
+              ondismiss: async function () {
+                await axios.delete(`${process.env.NEXT_PUBLIC_BACKEND_URL}/subscriptions/cancel`, {
+                  withCredentials: true,
+                });
+              },
+            },
+            prefill: {
+              email: user?.email,
+              name:user?.name
+            },
+          };
+    
+          const razorpay = new window.Razorpay(options)
+    
+          razorpay.open();
+        } catch (error) {
+          console.error("Error subscribing:", error);
+          if (isAxiosError(error)) {
+            toast.error(error.response?.data.message);
+          } else {
+            toast.error("unexpected error ");
+          }
+        } finally {
+          setLoading(false);
+        }
+    }
+    const cancelSubscription = async()=>{
+        try {
+           await axios.delete(`${process.env.NEXT_PUBLIC_BACKEND_URL}/payment/subscriptions/cancel`,{
+            withCredentials:true
+          })
+          toast.success("Subscription cancelled")
+          queryClient.invalidateQueries({queryKey:['user']})
+        } catch (error) {
+          console.error("Error unsubscribing:", error);
+          if (error instanceof AxiosError) {
+            toast.error(error.response?.data.message);
+          } else {
+            toast.error("unexpected error ");
+          }
+        }
+    }
     return (
         <div className="w-full relative max-w-lg hover:transtion-all hover:scale-105 duration-300">
             <div className={cn('relative flex flex-col h-full gap-4 lg:gap-8 z-10 p-8 border-[1px] rounded-2xl border-gray-500/20 ',
@@ -97,16 +190,18 @@ function PlanCard(
                 </div>
 
                 <div className="space-y-2 flex justify-center w-full">
-                    <Link
-                    href={''}
+                    <Button
+                    onClick={id === 'pro' ? handleSubscribe : undefined}
                     className={cn(
-                        "w-full rounded-full flex items-center justify-center gap-2 bg-linear-to-r from-rose-800 to-rose-500 hover:from-rose-500 hover:to-rose-800 text-white border-2 py-2",
+                        "w-full rounded-full flex items-center justify-center gap-2 bg-linear-to-r from-rose-800 to-rose-500 hover:from-rose-500 hover:to-rose-800 text-white border-2 py-5",
                         id === 'pro' ? 'border-rose-900' : 'border-rose-100 from-rose-400 to-rose-500'
                     )}
                     >
-                        Buy Plan 
-                        <ArrowRight size={18} />
-                    </Link>
+                        {id === 'pro' ? 'Buy Plan' : 'Default Plan'}
+                        {
+                            id === 'pro' && <ArrowRight size={16} />
+                        }
+                    </Button>
                 </div>
 
             </div>

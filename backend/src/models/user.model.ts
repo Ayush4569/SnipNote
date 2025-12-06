@@ -18,7 +18,8 @@ const userSchema = new Schema({
             type: Schema.Types.ObjectId,
             ref: "Summary"
         }
-    ]
+    ],
+    subscriptionId :String
 }, { timestamps: true })
 
 export const User = model("User", userSchema);

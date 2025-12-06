@@ -4,4 +4,5 @@ export interface User {
     email: string;
     picture?: string | null;
     createdAt?: string;
+    isPro : boolean
 }

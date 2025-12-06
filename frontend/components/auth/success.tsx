@@ -8,12 +8,10 @@ import { Loader2 } from "lucide-react";
 export default function AuthSuccessPage() {
   const router = useRouter();
   useEffect(() => {
-    const interval = setTimeout(() => router.replace('/'), 3000);
+    const interval = setTimeout(() => router.replace('/dashboard'), 1500);
     return () => clearTimeout(interval);
   }, [router])
   
-  
-
   return (
     <main className="flex min-h-screen flex-col items-center justify-center bg-gradient-to-br from-green-50 via-white to-green-100 p-6">
       <BgGradient />

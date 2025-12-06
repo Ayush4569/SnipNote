@@ -6,7 +6,7 @@ import { getSummaryFromGemini } from '../services/gemini.service';
 import { cleanPDFText } from '../utils/pdf.tools';
 import { Summary } from '../models/summary.model';
 import { fileUploadSchema } from '../schemas/upload';
-import { logMemoryUsage } from '../utils/memory.usage';
+
 import { User } from '../models/user.model';
 import mongoose from 'mongoose';
 const generateSummary = asyncHandler(async (req: Request, res: Response) => {
@@ -75,9 +75,7 @@ const generateSummary = asyncHandler(async (req: Request, res: Response) => {
     throw new CustomError(400, 'Pro users can only summarize PDFs with up to 100 pages')
   }
 
-  logMemoryUsage('Before PDF parse');
   const { text } = await parser.getText();
-  logMemoryUsage('After PDF parse');
   let refinedText: string = cleanPDFText(text)
 
   if (!refinedText.trim()) {
@@ -90,7 +88,6 @@ const generateSummary = asyncHandler(async (req: Request, res: Response) => {
   const { success, summary, status, message, tokensUsed } = await getSummaryFromGemini(refinedText)
 
   refinedText = ''
-  logMemoryUsage('After summary generation');
   if (!success || !summary) {
     newSummary.status = 'failed'
     newSummary.error = message || 'Error generating final summary from Gemini'
@@ -125,7 +122,6 @@ const generateSummary = asyncHandler(async (req: Request, res: Response) => {
     session.abortTransaction()
   }
 
-  logMemoryUsage('After saving summary to DB');
 
   return res.status(200).json({
     success: true,
@@ -147,9 +143,11 @@ const getSummary = asyncHandler(async (req: Request, res: Response) => {
   }
   return res.status(200).json({
     success: true,
-    summary
+    summary:{
+      ...summary.toObject(),
+      wordCount: summary.summaryText ? summary.summaryText.split(' ').length : 0
+    }
   })
-
 
 })
 
