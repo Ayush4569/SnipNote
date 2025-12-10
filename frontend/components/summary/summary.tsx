@@ -5,34 +5,37 @@ import SummaryHeader from "./summary-header";
 import { useParams } from "next/navigation";
 import { useGetSummaryById } from "@/hooks/useGetSummaryById";
 import Loading from "@/app/loading";
+import SummaryViewer from "./summary-viewer";
+import { useMemo } from "react";
+import SourceInfo from "./source-info";
 
 
-function SourceInfo({fileName}:{fileName:string}) {
-    return (
-        <div className="mt-2 sm:mt-4 text-sm sm:text-base text-gray-600 dark:text-gray-300">
-            Source File: <span className="font-medium">{fileName}</span>
-        </div>
-    )
-}
+
 
 export default function SummaryComponent() {
     const {id} = useParams();
     const {data,isError,error,isPending} = useGetSummaryById({summaryId:id as string});
+    const estimatedReadTime = useMemo(() => {
+        if (!data?.wordCount) return 0;
+        const wordsPerMinute = 200; 
+        return Math.ceil(data.wordCount / wordsPerMinute);
+    }, [data?.wordCount]);
     if (isPending) {
         return <Loading />;
     }
     if (isError) {
         return <div>Error: {error.message}</div>;
     }
+    
     return (
         <div className="relative isolate min-h-screen bg-linear-to-b from-rose-50/40 to-white">
             <BgGradient className="from-rose-400 via-rose-300 to-orange-200" />
             <div className="container mx-auto flex flex-col gap-4">
                 <div className="px-4 sm:px-6 lg:px-8 py-6 sm:py-12 lg:py-24">
                     <div className="flex flex-col">
-                        <SummaryHeader title={data.fileName} />
+                        <SummaryHeader createdAt={data.createdAt} readingTime={estimatedReadTime} title={data.fileName} />
                     </div>
-                    {data.fileName && <SourceInfo fileName={data.fileName} />}
+                    {data.fileName && <SourceInfo fileName={data.fileName} originalFileUrl={data.pdfUrl} createdAt={data.createdAt} summaryText={data.summaryText ?? ""} />}
                     <div className="relative mt-4 sm:mt-8 lg:mt-16">
                         <div className="relative p-4 sm:p-6 lg:p-8 bg-white/80 backdrop-blur-md rounded-2xl sm:rounded-3xl shadow-xl border border-rose-100/30 transition-all duration-300 hover:shadow-2xl hover:bg-white/90 max-w-4xl mx-auto">
                             <div className="absolute inset-0 bg-linear-to-br from-rose-50/50 via-orange-50/30 to-transparent opacity-50 rounded-2xl sm:rounded-3xl"></div>
@@ -43,7 +46,7 @@ export default function SummaryComponent() {
                             </div>
 
                             <div className="relative mt-8 sm:mt-6 flex justify-center">
-                                {/* <SummaryViewer summary={summary.summary_text} /> */}
+                                <SummaryViewer summary={data.summaryText ?? 'No summary available'} />
                             </div>
                         </div>
                     </div>

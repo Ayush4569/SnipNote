@@ -29,13 +29,13 @@ export default async function RootLayout({
         className={`${fontSans.variable} font-sans antialiased`}
       >
         <div className="flex flex-col relative min-h-screen">
-            <Providers tokenStatus={tokenStatus}>
-          <Header />
-          <main className="flex-1">
-            {children}
-          </main>
-          <Footer />
-            </Providers>
+          <Providers tokenStatus={tokenStatus}>
+            <Header />
+            <main className="flex-1">
+              {children}
+            </main>
+            <Footer />
+          </Providers>
         </div>
 
       </body>

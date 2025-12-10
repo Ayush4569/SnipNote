@@ -28,8 +28,8 @@ const generateSummary = asyncHandler(async (req: Request, res: Response) => {
   let premiumUser = null;
   if(user.isPro) {
      premiumUser = await Subscription.findOne({ userId: user.id, status: 'active' })
-    if (premiumUser && premiumUser.canGeneratePdf()){
-      throw new CustomError(403, 'You have reached the monthly limit of PDF summaries for Pro users. Please contact support for more access.')
+    if (premiumUser && !premiumUser.canGeneratePdf()){
+      throw new CustomError(403, 'You have reached the monthly limit of PDF summaries for Pro users')
     }
   }
 
@@ -75,13 +75,20 @@ const generateSummary = asyncHandler(async (req: Request, res: Response) => {
 
   if (user.isPro && pages > 50) {
     newSummary.status = 'failed'
-    newSummary.error = 'Pro users can only summarize PDFs with up to 100 pages'
+    newSummary.error = 'Pro users can only summarize PDFs with up to 50 pages'
     await newSummary.save()
     throw new CustomError(400, 'Pro users can only summarize PDFs with up to 50 pages')
   }
 
-  const { text } = await parser.getText();
-  let refinedText: string = cleanPDFText(text)
+  let refinedText: string 
+  try{
+    const { text } = await parser.getText();
+    refinedText = cleanPDFText(text);
+  } finally{
+    parser = null as any
+  }
+  
+
 
   if (!refinedText.trim()) {
     newSummary.status = 'failed'

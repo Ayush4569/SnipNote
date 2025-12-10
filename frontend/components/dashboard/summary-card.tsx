@@ -11,7 +11,6 @@ export default function SummaryCard(
         pdfUrl,
         fileName,
         createdAt,
-        updatedAt,
         summaryText,
         error,
         tokenUsed,
@@ -33,12 +32,13 @@ export default function SummaryCard(
                             }
                             fileUrl={pdfUrl} />
                         <p className="text-gray-600 line-clamp-2 text-sm sm:text-base  pl-2">
-                            {summaryText ? summaryText : 'No summary available.'}
+                            {summaryText ? summaryText : error ? error : "No summary available"}
                         </p>
                         <div className="mt-2 flex justify-between items-center sm:mt-4">
                             <StatusBadge
                                 status={status as 'processing' | 'completed' | 'failed'}
                             />
+                            <span>Tokens used: {tokenUsed || 0}</span>
                         </div>
                     </div>
                 </Link>

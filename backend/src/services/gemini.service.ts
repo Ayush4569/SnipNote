@@ -1,32 +1,33 @@
 import { GoogleGenAI, ApiError } from "@google/genai";
-import { SUMMARY_SYSTEM_PROMPT } from "../utils/system.prompt";
 
 const ai = new GoogleGenAI({
     apiKey: process.env.GEMINI_API_KEY as string
 })
 
 
-export const getSummaryFromGemini = async (pdfContent: string, prompt?: string, useSystemPrompt = true) => {
+export const getSummaryFromGemini = async (pdfContent: string) => {
     try {
         const response = await ai.models.generateContent({
-            model: process.env.MODEL as string || 'gemini-2.0-flash',
+            model: process.env.MODEL as string || 'gemini-2.5-flash-lite',
 
             contents: [
                 {
                     role: 'user',
                     parts: [
                         {
-                            text: prompt ?? `Transform this document into an engaging, easy to read summary with contextual relevant emojis and proper markdown formatting:\n\n${pdfContent} `
+                            text: `Transform this document into an engaging, easy to read summary with contextual relevant emojis and proper markdown formatting:\n\n${pdfContent} `
                         }
                     ]
                 }
             ],
             config: {
-                ...(useSystemPrompt && { systemInstruction: SUMMARY_SYSTEM_PROMPT }),
                 temperature: 0.7,
-                maxOutputTokens: 2048
+                maxOutputTokens: 1500
             }
         })
+
+        console.log('Gemini API Response :', response);
+        
         
         return {
             success: true,
