@@ -3,13 +3,14 @@ import { CustomError } from '../utils/apiError';
 import { PDFParse } from 'pdf-parse';
 import { asyncHandler } from '../utils/asyncHandler';
 import { getSummaryFromGemini } from '../services/gemini.service';
-import { cleanPDFText } from '../utils/pdf.tools';
+import { calculateWordCount, cleanPDFText } from '../utils/pdf.tools';
 import { Summary } from '../models/summary.model';
 import { fileUploadSchema } from '../schemas/upload';
 
 import { User } from '../models/user.model';
 import mongoose from 'mongoose';
 import { Subscription } from '../models/subscription.model';
+import { SummarySchema, SummaryType } from '../schemas/summary';
 const generateSummary = asyncHandler(async (req: Request, res: Response) => {
   if (!req.user || !req.user.id) {
     throw new CustomError(401, "Unauthorized")
@@ -26,9 +27,9 @@ const generateSummary = asyncHandler(async (req: Request, res: Response) => {
 
 
   let premiumUser = null;
-  if(user.isPro) {
-     premiumUser = await Subscription.findOne({ userId: user.id, status: 'active' })
-    if (premiumUser && !premiumUser.canGeneratePdf()){
+  if (user.isPro) {
+    premiumUser = await Subscription.findOne({ userId: user.id, status: 'active' })
+    if (premiumUser && !premiumUser.canGeneratePdf()) {
       throw new CustomError(403, 'You have reached the monthly limit of PDF summaries for Pro users')
     }
   }
@@ -80,15 +81,13 @@ const generateSummary = asyncHandler(async (req: Request, res: Response) => {
     throw new CustomError(400, 'Pro users can only summarize PDFs with up to 50 pages')
   }
 
-  let refinedText: string 
-  try{
+  let refinedText: string
+  try {
     const { text } = await parser.getText();
     refinedText = cleanPDFText(text);
-  } finally{
+  } finally {
     parser = null as any
   }
-  
-
 
   if (!refinedText.trim()) {
     newSummary.status = 'failed'
@@ -100,6 +99,17 @@ const generateSummary = asyncHandler(async (req: Request, res: Response) => {
   const { success, summary, status, message, tokensUsed } = await getSummaryFromGemini(refinedText)
 
   refinedText = ''
+  const summaryValidationResult = SummarySchema.safeParse(summary)
+  if (!summaryValidationResult.success) {
+    newSummary.status = 'failed'
+    newSummary.error = 'Gemini summary format error'
+    newSummary.tokenUsed = (tokensUsed)
+
+    await newSummary.save()
+
+    throw new CustomError(status || 500, "Gemini summary format error")
+  }
+
   if (!success || !summary) {
     newSummary.status = 'failed'
     newSummary.error = message || 'Error generating final summary from Gemini'
@@ -116,12 +126,12 @@ const generateSummary = asyncHandler(async (req: Request, res: Response) => {
       newSummary.$session(session);
       user.$session(session);
       premiumUser?.$session(session);
-  
+
       newSummary.status = 'completed';
       newSummary.summaryText = summary;
       newSummary.tokenUsed = tokensUsed;
       await newSummary.save({ session });
-  
+
       if (user.isPro && premiumUser) {
         await premiumUser.incrementPdfUsage(session);
       } else {
@@ -141,10 +151,8 @@ const generateSummary = asyncHandler(async (req: Request, res: Response) => {
     summary
   })
 
-
 })
 const getSummary = asyncHandler(async (req: Request, res: Response) => {
-
   const { id } = req.params;
   if (!req.user || !req.user.id) {
     throw new CustomError(401, "Unauthorized")
@@ -153,11 +161,13 @@ const getSummary = asyncHandler(async (req: Request, res: Response) => {
   if (!summary) {
     throw new CustomError(404, "Summary not found")
   }
+  const wordCount = summary.summaryText ? calculateWordCount(summary.summaryText as SummaryType[]) : 0
+
   return res.status(200).json({
     success: true,
     summary: {
       ...summary.toObject(),
-      wordCount: summary.summaryText ? summary.summaryText.split(' ').length : 0
+      wordCount
     }
   })
 

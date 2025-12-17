@@ -11,7 +11,6 @@ export default function SummaryCard(
         pdfUrl,
         fileName,
         createdAt,
-        summaryText,
         error,
         tokenUsed,
         status,
@@ -31,9 +30,7 @@ export default function SummaryCard(
                                 formatDistanceToNow(new Date(createdAt), { addSuffix: true })
                             }
                             fileUrl={pdfUrl} />
-                        <p className="text-gray-600 line-clamp-2 text-sm sm:text-base  pl-2">
-                            {summaryText ? summaryText : error ? error : "No summary available"}
-                        </p>
+                        
                         <div className="mt-2 flex justify-between items-center sm:mt-4">
                             <StatusBadge
                                 status={status as 'processing' | 'completed' | 'failed'}

@@ -6,6 +6,7 @@ import { User } from "../models/user.model";
 import { decodeRefreshToken, generateAccessToken, generateRefreshToken } from "../utils/generateTokens";
 import { accessTokenOptions, refreshTokenOptions } from "../utils/cookiesOptions";
 import { CustomError } from "../utils/apiError";
+import { Model, Types } from "mongoose";
 
 const googleSignIn = asyncHandler(async (req: Request, res: Response) => {
     try {
@@ -62,7 +63,7 @@ const googleSignIn = asyncHandler(async (req: Request, res: Response) => {
             name: newUser.name,
             email: newUser.email,
             picture: newUser.picture || '',
-            _id: newUser._id,
+            _id: newUser._id as Types.ObjectId,
             isPro : newUser.isPro
         }
 
@@ -120,7 +121,7 @@ const refreshAccessToken = async (req: Request, res: Response) => {
         throw new CustomError(401,"Invalid refresh token")
     }
 
-    const user = await User.findById(decodedUser.id);
+    const user = await User.findById(decodedUser.id) ;
 
     if (!user) {
         res.status(401).clearCookie("refreshToken", incomingRefreshToken).json({
@@ -140,7 +141,7 @@ const refreshAccessToken = async (req: Request, res: Response) => {
         return;
     }
 
-    const accessToken = generateAccessToken(user);
+    const accessToken = generateAccessToken({...user,_id:user._id as Types.ObjectId});
     res
         .status(200)
         .cookie("accessToken", accessToken, accessTokenOptions)

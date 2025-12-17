@@ -15,7 +15,32 @@ export const getSummaryFromGemini = async (pdfContent: string) => {
                     role: 'user',
                     parts: [
                         {
-                            text: `Transform this document into an engaging, easy to read summary with contextual relevant emojis and proper markdown formatting:\n\n${pdfContent} `
+                        text: `You are an expert technical summarizer.
+                            Convert the following document into a structured summary strictly in JSON format.
+
+                            RULES (VERY IMPORTANT):
+                            - Output ONLY valid JSON.
+                            - Do NOT include markdown.
+                            - Do NOT include explanations or extra text.
+                            - Do NOT wrap the JSON in backticks.
+                            - Each slide must contain:
+                              - "heading": a short, clear title (string, no # symbols)
+                              - "points": an array of concise bullet points (strings)
+                            - Use relevant emojis inside headings or points where appropriate.
+                            - Keep each slide focused (3–6 bullet points per slide).
+                            - Do NOT nest objects.
+
+                            JSON FORMAT:
+                            [
+                              {
+                                "heading": "Slide title here",
+                                "points": ["point 1", "point 2"]
+                              }
+                            ]
+
+                            DOCUMENT:
+                            ${pdfContent}`
+
                         }
                     ]
                 }
@@ -27,17 +52,23 @@ export const getSummaryFromGemini = async (pdfContent: string) => {
         })
 
         console.log('Gemini API Response :', response);
-        
-        
+        const parsedSlides = JSON.parse(response.text as string)
+
+        const slidesWithIdx = parsedSlides.map((s:any, i:number) => ({
+        idx: i,
+        heading: s.heading,
+        points: s.points,
+        }))
+
         return {
             success: true,
             message: "Summary generated",
             status: 200,
-            summary: response.text,
-            tokensUsed : response.usageMetadata?.totalTokenCount || 0
+            summary: slidesWithIdx ,
+            tokensUsed: response.usageMetadata?.totalTokenCount || 0
         }
 
-    } catch (error:any| ApiError) {
+    } catch (error: any | ApiError) {
         console.log('Gemini API Error :', error);
         return {
             success: false,

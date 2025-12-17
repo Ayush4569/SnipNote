@@ -8,6 +8,7 @@ import Loading from "@/app/loading";
 import SummaryViewer from "./summary-viewer";
 import { useMemo } from "react";
 import SourceInfo from "./source-info";
+import { SummarySlide } from "@/types/summary";
 
 
 
@@ -35,7 +36,7 @@ export default function SummaryComponent() {
                     <div className="flex flex-col">
                         <SummaryHeader createdAt={data.createdAt} readingTime={estimatedReadTime} title={data.fileName} />
                     </div>
-                    {data.fileName && <SourceInfo fileName={data.fileName} originalFileUrl={data.pdfUrl} createdAt={data.createdAt} summaryText={data.summaryText ?? ""} />}
+                    {data.fileName && <SourceInfo fileName={data.fileName} originalFileUrl={data.pdfUrl} createdAt={data.createdAt} summaryText={ "Random summary"} />}
                     <div className="relative mt-4 sm:mt-8 lg:mt-16">
                         <div className="relative p-4 sm:p-6 lg:p-8 bg-white/80 backdrop-blur-md rounded-2xl sm:rounded-3xl shadow-xl border border-rose-100/30 transition-all duration-300 hover:shadow-2xl hover:bg-white/90 max-w-4xl mx-auto">
                             <div className="absolute inset-0 bg-linear-to-br from-rose-50/50 via-orange-50/30 to-transparent opacity-50 rounded-2xl sm:rounded-3xl"></div>
@@ -46,7 +47,7 @@ export default function SummaryComponent() {
                             </div>
 
                             <div className="relative mt-8 sm:mt-6 flex justify-center">
-                                <SummaryViewer summary={data.summaryText ?? 'No summary available'} />
+                                <SummaryViewer summaryText={data.summaryText as SummarySlide[]} />
                             </div>
                         </div>
                     </div>
