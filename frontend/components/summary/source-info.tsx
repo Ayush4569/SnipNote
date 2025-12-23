@@ -1,6 +1,7 @@
 import { ExternalLink, FileText } from "lucide-react";
 import { Button } from "../ui/button";
 import DownloadSummaryButton from "./download-summary-button";
+import { SummarySlide } from "@/types/summary";
 
 export default function SourceInfo({
     fileName,
@@ -9,7 +10,7 @@ export default function SourceInfo({
     createdAt,
   }: {
     createdAt: Date;
-    summaryText: string;
+    summaryText: SummarySlide[];
     originalFileUrl: string;
     fileName: string;
   }) {

@@ -23,18 +23,18 @@ const plans: Plan[] = [
         description: "For individuals trial use",
         features: [
             "5 PDF summaries per month",
-            "Max PDF size 7MB",
+            "Max PDF size 10MB",
             "Max 10 pages per PDF"
         ]
     },
     {
         id: "pro",
         name: "Pro",
-        price: 799,
+        price: 399,
         description: "For frequent users",
         features: [
             "20 PDF summaries per month",
-            "Max PDF size 20MB",
+            "Max PDF size 30MB",
             "Max 30 pages per PDF",
             "24/7 Support",
         ]

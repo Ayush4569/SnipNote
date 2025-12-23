@@ -1,5 +1,6 @@
 'use client'
 
+import { deleteFile } from "@/app/actions/delete-file";
 import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { queryClient } from "@/lib/tanstack";
@@ -8,11 +9,13 @@ import { cn } from "@/lib/utils";
 import { fileUploadSchema } from "@/schemas/upload.schema";
 import axios, { isAxiosError } from "axios";
 import { Loader2Icon } from "lucide-react";
+import { useRouter } from "next/navigation";
 import { useRef, useState } from "react";
 import { toast } from "sonner";
 
 export default function UploadForm() {
     const [loading, setLoading] = useState(false)
+    const router = useRouter()
     const uploadInputRef = useRef<HTMLInputElement>(null);
     const { startUpload } = useUploadThing('pdfUploader', {
         onClientUploadComplete: () => {
@@ -55,16 +58,19 @@ export default function UploadForm() {
             },{
                 withCredentials: true
             })
-            if (data.success && data.summary.trim() !== '') {
+            if (data.success ) {
                 toast.success(
-                    data.message || 'File summarized successfully', { icon: '✅' }
+                    data.message || 'File summarized successfully', { icon: '✅',duration: 3000 }
                 )
                 queryClient.invalidateQueries({ queryKey: ['summaries'] })
+                router.push('/dashboard')
             }
         } catch (error: any) {
             console.log('Error uploading file', error);
             toast.error(
                 isAxiosError(error) ? error.response?.data.message : 'Error uploading file')
+            // delete the file from uploadthing
+            deleteFile(response[0].key)
         } finally {
             uploadInputRef.current!.value = ''
             setLoading(false)

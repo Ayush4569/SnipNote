@@ -33,6 +33,7 @@ export default function SummaryCard(
                         
                         <div className="mt-2 flex justify-between items-center sm:mt-4">
                             <StatusBadge
+                            error={error}
                                 status={status as 'processing' | 'completed' | 'failed'}
                             />
                             <span>Tokens used: {tokenUsed || 0}</span>
@@ -60,16 +61,18 @@ const SummaryHeader = ({ title, createdAt, fileUrl }: { title: string, createdAt
 
 const StatusBadge = (
     {
-        status
+        status,
+        error
     }: {
         status: 'processing' | 'completed' | 'failed'
+        error?: string
     }
 ) => {
     return (
         <span
             className={cn('px-3 py-1 text-xs font-medium rounded-full capitalize', status === 'completed' ? 'bg-green-100 text-green-800' : status === 'processing' ? 'bg-yellow-100 text-yellow-800' : 'bg-red-100 text-red-800')}
         >
-            {status}
+            {status !== 'failed' ? status : `failed${error ? `: ${error}` : ''}`}
         </span>
     )
 }

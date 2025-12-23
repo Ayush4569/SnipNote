@@ -10,6 +10,7 @@ import { addMonths } from "date-fns";
 import { generateSafeEmail } from "../utils/generateSafeEmail";
 
 const createSubscription = asyncHandler(async (req: Request, res: Response) => {
+    console.log('Creating subscription for user:', req.user);
     if (!req.user || !req.user.id || !req.user.email) {
         throw new CustomError(400, 'Unauthorized')
     }
@@ -19,6 +20,8 @@ const createSubscription = asyncHandler(async (req: Request, res: Response) => {
     const existingSubscription = await Subscription.findOne({
         userId: id
     })
+    console.log('existingSubscription', existingSubscription);
+    
 
     if (existingSubscription?.status === 'active') {
         throw new CustomError(400, 'You already have an active subscription')
@@ -40,6 +43,8 @@ const createSubscription = asyncHandler(async (req: Request, res: Response) => {
         }
     }
     const customerEmail = generateSafeEmail(email)
+    console.log('customerEmail', customerEmail);
+    
 
     const newCustomer = await razorpayService.customers.create({
         email: customerEmail,

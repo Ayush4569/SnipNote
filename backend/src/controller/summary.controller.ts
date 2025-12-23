@@ -147,8 +147,7 @@ const generateSummary = asyncHandler(async (req: Request, res: Response) => {
 
   return res.status(200).json({
     success: true,
-    message: "Summary generated successfully",
-    summary
+    message: "Summary generated successfully"
   })
 
 })
