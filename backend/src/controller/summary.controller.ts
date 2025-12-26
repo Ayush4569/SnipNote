@@ -60,25 +60,25 @@ const generateSummary = asyncHandler(async (req: Request, res: Response) => {
     await newSummary.save()
     throw new CustomError(500, 'Error processing PDF file')
   }
-
+  
   if (pages === 0) {
     newSummary.status = 'failed'
     newSummary.error = 'The PDF file is empty'
     await newSummary.save()
     throw new CustomError(400, 'The PDF file is empty')
   }
-  if (!user.isPro && pages > 10) {
+  if (!user.isPro && pages > 15) {
     newSummary.status = 'failed'
-    newSummary.error = 'Free tier users can only summarize PDFs with up to 10 pages'
+    newSummary.error = 'Free tier users can only summarize PDFs with up to 15 pages'
     await newSummary.save()
-    throw new CustomError(400, 'Free tier users can only summarize PDFs with up to 10 pages. Please upgrade to Pro for larger documents.')
+    throw new CustomError(400, 'Free tier users can only summarize PDFs with up to 15 pages. Please upgrade to Pro for larger documents.')
   }
 
-  if (user.isPro && pages > 50) {
+  if (user.isPro && pages > 60) {
     newSummary.status = 'failed'
-    newSummary.error = 'Pro users can only summarize PDFs with up to 50 pages'
+    newSummary.error = 'Pro users can only summarize PDFs with up to 60 pages'
     await newSummary.save()
-    throw new CustomError(400, 'Pro users can only summarize PDFs with up to 50 pages')
+    throw new CustomError(400, 'Pro users can only summarize PDFs with up to 60 pages')
   }
 
   let refinedText: string

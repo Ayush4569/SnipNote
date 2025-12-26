@@ -99,6 +99,15 @@ function calculateWordCount(summary: SummaryType[]): number {
   return text.replace(/[\p{Emoji_Presentation}\{Extended_Pictographic}]/gu, "").split(" ").length
 }
 
+function extractJsonArray(text:string):string {
+  const firstBracket = text.indexOf('[')
+  const lastBracket = text.lastIndexOf(']')
+  if (firstBracket === -1 || lastBracket === -1) {
+    throw new Error("No JSON array found in AI response")
+  }
+  return text.slice(firstBracket,lastBracket+1)
+}
+
 /*
   // check for estimated token usage
   const { chunks, tokens, totalChunks } = generateChunks(refinedText,req.user.isPro)
@@ -169,4 +178,4 @@ function calculateWordCount(summary: SummaryType[]): number {
 */
 
 
-export { estimateTokens, cleanPDFText, generateChunks,calculateWordCount };
+export { estimateTokens, cleanPDFText, generateChunks,calculateWordCount,extractJsonArray };

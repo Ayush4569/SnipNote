@@ -1,17 +1,34 @@
-import { Schema, model } from "mongoose";
+import mongoose, { Document, Model, Schema, model } from "mongoose";
 
-const summarySchema = new Schema({
+interface Summary extends Document {
+    pdfUrl: string;
+    fileName: string;
+    createdAt: Date;
+    updatedAt: Date;
+    summaryText: {
+        idx: number;
+        heading: string;
+        points: string[];
+    }[];
+    error?: string;
+    tokenUsed?: number;
+    status?: "processing" | "completed" | "failed" | null;
+    userId: mongoose.Types.ObjectId;
+}
+
+const summarySchema = new Schema<Summary>({
     pdfUrl: { type: String, required: true },
     fileName: { type: String, required: true },
     createdAt: { type: Date, default: Date.now },
     updatedAt: { type: Date, default: Date.now },
     summaryText: [
-        {
+       new mongoose.Schema( {
             idx: { type: Number, required: true },
             heading: { type: String, required: true },
             points: { type: [String], required: true },
         },
-        {_id:false}
+        {_id: false}
+    )
     ],
     error: {
         type: String
@@ -31,4 +48,4 @@ const summarySchema = new Schema({
     }
 }, { timestamps: true })
 
-export const Summary = model("Summary", summarySchema);
+export const Summary = model<Summary, Model<Summary, {}, {}>>('Summary', summarySchema);

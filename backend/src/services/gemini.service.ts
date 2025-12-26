@@ -1,4 +1,6 @@
 import { GoogleGenAI, ApiError } from "@google/genai";
+import { extractJsonArray } from "../utils/pdf.tools";
+import { SummaryType } from "schemas/summary";
 
 const ai = new GoogleGenAI({
     apiKey: process.env.GEMINI_API_KEY as string
@@ -47,13 +49,33 @@ export const getSummaryFromGemini = async (pdfContent: string) => {
             ],
             config: {
                 temperature: 0.7,
-                maxOutputTokens: 1500
+                maxOutputTokens: 1500 
             }
         })
 
-        console.log('Gemini API Response :', response);
-        const parsedSlides = JSON.parse(response.text as string)
-
+        const santizedJsonArray = extractJsonArray(response.text as string)
+        const parsedSlides = JSON.parse(santizedJsonArray as string)
+        if(!Array.isArray(parsedSlides)) {
+            return {
+                success: false,
+                status: 400,
+                message: "Invalid json array",
+                summary: null
+            }
+        }
+        for (const slide of parsedSlides) {
+            if (
+              typeof slide.heading !== "string" ||
+              !Array.isArray(slide.points)
+            ) {
+                return {
+                    success: false,
+                    status: 400,
+                    message: "Invalid slide structure from AI",
+                    summary: null
+                }
+            }
+        }
         const slidesWithIdx = parsedSlides.map((s:any, i:number) => ({
         idx: i,
         heading: s.heading,
@@ -64,7 +86,7 @@ export const getSummaryFromGemini = async (pdfContent: string) => {
             success: true,
             message: "Summary generated",
             status: 200,
-            summary: slidesWithIdx ,
+            summary: slidesWithIdx as SummaryType[],
             tokensUsed: response.usageMetadata?.totalTokenCount || 0
         }
 
