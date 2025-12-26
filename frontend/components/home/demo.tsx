@@ -1,4 +1,7 @@
 import { BookOpenText } from "lucide-react";
+import { MotionDiv, MotionH3 } from "../common/motion-helpers";
+import SummaryViewer from "../summary/summary-viewer";
+import { demoSummary } from "@/lib/constants";
 
 export default function DemoSection() {
     return (
@@ -19,22 +22,37 @@ export default function DemoSection() {
                 </div>
 
                 <div className="flex flex-col items-center text-center space-y-4">
-                    <div className="inline-flex items-center justify-center p-2 rounded-2xl bg-gray-100/80 backdrop-blur-xs border border-gray-500/20 mb-4">
+                    <MotionDiv 
+                    initial={{ opacity: 0, y: 20 }}
+                    whileInView={{ opacity: 1, y: 0 }}
+                    transition={{ duration: 0.4 }}
+                    className="inline-flex items-center justify-center p-2 rounded-2xl bg-gray-100/80 backdrop-blur-xs border border-gray-500/20 mb-4">
                         <BookOpenText className="h-8 w-8 text-teal-400" />
-                    </div>
+                    </MotionDiv>
 
                     <div className="text-center mb-16">
-                        <h3 className="font-bold text-3xl max-w-2xl mx-auto px-4 sm:px-6">
+                        <MotionH3
+                        initial={{ opacity: 0, y: 20 }}
+                        whileInView={{ opacity: 1, y: 0 }}
+                        transition={{ duration: 0.6,delay: 0.2 }}
+                        className="font-bold text-3xl max-w-2xl mx-auto px-4 sm:px-6">
                             Watch How Snipnote transforms {' '}
                             <span className="bg-linear-to-r from-rose-500 to-rose-700 bg-clip-text text-transparent ">
                                 this React.js PDF
                             </span>{' '}
                             into an easy summary
-                        </h3>
+                        </MotionH3>
                     </div>
 
                     <div className="flex items-center justify-center px-2 sm:px-4 lg:px-6">
                         {/* Video Container */}
+                        <MotionDiv 
+                        initial={{ opacity: 0, scale: 0.95 }}
+                        whileInView={{ opacity: 1, scale: 1 }}
+                        transition={{ duration: 0.6 }}
+                        >
+                            <SummaryViewer summaryText={demoSummary}/>
+                        </MotionDiv>
                     </div>
                 </div>
 

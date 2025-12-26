@@ -7,39 +7,25 @@ import { toast } from "sonner";
 import axios, { AxiosError, isAxiosError } from "axios";
 import { useAuth } from "@/context/auth.context";
 import { queryClient } from "@/lib/tanstack";
+import { Plan, containerVariants, itemVariants, plans } from "@/lib/constants";
+import { MotionDiv, MotionSection } from "../common/motion-helpers";
 
-type Plan = {
-    id: string,
-    name: string,
-    price: number,
-    description: string,
-    features: string[]
-}
-const plans: Plan[] = [
-    {
-        id: "basic",
-        name: "Basic",
-        price: 0,
-        description: "For individuals trial use",
-        features: [
-            "5 PDF summaries per month",
-            "Max PDF size 10MB",
-            "Max 10 pages per PDF"
-        ]
+const listVariants = {
+    hidden: {
+      opacity: 0,
+      x: -20,
     },
-    {
-        id: "pro",
-        name: "Pro",
-        price: 399,
-        description: "For frequent users",
-        features: [
-            "20 PDF summaries per month",
-            "Max PDF size 30MB",
-            "Max 30 pages per PDF",
-            "24/7 Support",
-        ]
-    }
-]
+    visible: {
+      opacity: 1,
+      x: 0,
+      transition: {
+        type: "spring" as const,
+        stiffness: 100,
+        damping: 20,
+      },
+    },
+  }
+
 const loadRazorpayScript = () => {
     return new Promise((resolve) => {
       const script = document.createElement("script");
@@ -52,11 +38,18 @@ const loadRazorpayScript = () => {
 export default function Pricing() {
     
     return (
-        <section className="overflow-hidden relative" id="pricing">
+        <MotionSection 
+        variants={containerVariants}
+        initial="hidden"
+        whileInView="visible"
+        viewport={{once:true, margin:"-100px"}}
+        className="overflow-hidden relative" id="pricing">
             <div className="py-12 lg:py-24 max-w-5xl mx-auto px-4 sm:px-6 lg:px-8 lg:pt-12">
-                <div className="w-full flex items-center justify-center pb-12">
+                <MotionDiv 
+                variants={itemVariants}
+                className="w-full flex items-center justify-center pb-12">
                     <h2 className="uppercase font-bold text-xl mb-8 text-rose-500">Pricing</h2>
-                </div>
+                </MotionDiv>
                 <div className="relative flex flex-col justify-center items-center lg:flex-row lg:items-stretch gap-8">
                     {
                         plans.map((plan, index) => {
@@ -65,7 +58,7 @@ export default function Pricing() {
                     }
                 </div>
             </div>
-        </section>
+        </MotionSection>
     );
 }
 
@@ -157,26 +150,32 @@ function PlanCard(
         }
     }
     return (
-        <div className="w-full relative max-w-lg hover:transtion-all hover:scale-105 duration-300">
+        <MotionDiv variants={listVariants} whileHover={{scale:1.02}} className="w-full relative max-w-lg hover:transtion-all hover:scale-105 duration-300">
             <div className={cn('relative flex flex-col h-full gap-4 lg:gap-8 z-10 p-8 border-[1px] rounded-2xl border-gray-500/20 ',
                 id === 'pro' && 'border-2 gap-5 border-rose-500 shadow-2xl shadow-rose-500/10'
             )}>
-                <div className="flex items-center justify-between gap-4">
+                <MotionDiv
+                variants={listVariants}
+                 className="flex items-center justify-between gap-4">
                     <div>
                         <p className="text-lg lg:text-xl font-bold capitalize">{name}</p>
                         <p className="text-base-content/80 mt-2">{description}</p>
                     </div>
-                </div>
+                </MotionDiv>
 
-                <div className="flex gap-2">
+                <MotionDiv
+                variants={listVariants}
+                className="flex gap-2">
                     <p className="text-5xl tracking-tight font-extrabold">₹{price}</p>
                     <div className="flex flex-col justify-end mb-[4px]">
                         <p className="text-xs uppercase font-semibold">INR</p>
                         <p className="text-xs">/month</p>
                     </div>
-                </div>
+                </MotionDiv>
 
-                <div className="space-y-2.5 text-base leading-relaxed flex-1">
+                <MotionDiv
+                variants={listVariants}
+                className="space-y-2.5 text-base leading-relaxed flex-1">
                     {
                     features.map((feature) => 
                      (
@@ -187,9 +186,11 @@ function PlanCard(
                         )
                         )
                     }
-                </div>
+                </MotionDiv>
 
-                <div className="space-y-2 flex justify-center w-full">
+                <MotionDiv
+                variants={listVariants} 
+                className="space-y-2 flex justify-center w-full">
                     <Button
                     onClick={id === 'pro' ? handleSubscribe : undefined}
                     className={cn(
@@ -202,9 +203,9 @@ function PlanCard(
                             id === 'pro' && <ArrowRight size={16} />
                         }
                     </Button>
-                </div>
+                </MotionDiv>
 
             </div>
-        </div>
+        </MotionDiv>
     )
 }

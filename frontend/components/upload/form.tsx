@@ -45,7 +45,7 @@ export default function UploadForm() {
             return;
         }
         const response = await startUpload([file])
-        
+
         if (!response || response.length === 0) {
             toast.error('Error uploading file')
             setLoading(false)
@@ -55,12 +55,12 @@ export default function UploadForm() {
             const { data } = await axios.post(`${process.env.NEXT_PUBLIC_BACKEND_URL}/summary`, {
                 fileUrl: response[0].ufsUrl,
                 fileName: response[0].serverData.name
-            },{
+            }, {
                 withCredentials: true
             })
-            if (data.success ) {
+            if (data.success) {
                 toast.success(
-                    data.message || 'File summarized successfully', { icon: '✅',duration: 3000 }
+                    data.message || 'File summarized successfully', { icon: '✅', duration: 3000 }
                 )
                 queryClient.invalidateQueries({ queryKey: ['summaries'] })
                 router.push('/dashboard')
@@ -78,6 +78,14 @@ export default function UploadForm() {
     }
     return (
         <div className="flex flex-col gap-8 w-full max-w-2xl mx-auto">
+            <div className="relative">
+                <div className="absolute inset-0 flex items-center" aria-hidden="true">
+                    <div className="w-full border-t border-gray-200 dark:border-gray-800" />
+                </div>
+                <div className="relative flex justify-center">
+                    <span className="bg-background px-3 text-muted-foreground text-sm">Upload PDF</span>
+                </div>
+            </div>
             <form className="flex flex-col md:flex-row gap-6" onSubmit={handleSubmit}>
                 <Input
                     id="file"
@@ -100,6 +108,20 @@ export default function UploadForm() {
                     ) : 'Upload PDF'}
                 </Button>
             </form>
+            {
+                loading && (
+                    <>
+                        <div className="relative">
+                            <div className="absolute inset-0 flex items-center" aria-hidden="true">
+                                <div className="w-full border-t border-gray-200 dark:border-gray-800" />
+                            </div>
+                            <div className="relative flex justify-center">
+                                <span className="bg-background px-3 text-muted-foreground text-sm">Processing</span>
+                            </div>
+                        </div>
+                    </>
+                )
+            }
         </div>
     )
 }

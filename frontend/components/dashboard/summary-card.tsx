@@ -5,6 +5,8 @@ import { cn } from "@/lib/utils";
 import DeleteButton from "./delete-button";
 import { Summary } from "@/types/summary";
 import { formatDistanceToNow } from "date-fns";
+import { MotionDiv } from "../common/motion-helpers";
+import { itemVariants } from "@/lib/constants";
 export default function SummaryCard(
     {
         _id,
@@ -17,7 +19,11 @@ export default function SummaryCard(
     }: Summary
 ) {
     return (
-        <div>
+        <MotionDiv
+        variants={itemVariants}
+        initial="hidden"
+        animate="visible"
+        whileHover={{ scale: 1.02,transition:{duration:0.2,ease:'easeOut'} }}>
             <Card className="relative h-full">
                 <div className="absolute top-2 right-2">
                     <DeleteButton summaryId={_id} />
@@ -41,7 +47,7 @@ export default function SummaryCard(
                     </div>
                 </Link>
             </Card>
-        </div>
+        </MotionDiv>
     )
 }
 

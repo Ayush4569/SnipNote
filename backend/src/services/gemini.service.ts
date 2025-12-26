@@ -39,6 +39,8 @@ export const getSummaryFromGemini = async (pdfContent: string) => {
                                 "points": ["point 1", "point 2"]
                               }
                             ]
+                            
+                            - Ensure each slide has minimum 8 points.
 
                             DOCUMENT:
                             ${pdfContent}`
