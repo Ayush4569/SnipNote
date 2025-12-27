@@ -12,6 +12,7 @@ import { Loader2Icon } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useRef, useState } from "react";
 import { toast } from "sonner";
+import UploadSummarySkeleton from "./summary-skeleton";
 
 export default function UploadForm() {
     const [loading, setLoading] = useState(false)
@@ -63,7 +64,7 @@ export default function UploadForm() {
                     data.message || 'File summarized successfully', { icon: '✅', duration: 3000 }
                 )
                 queryClient.invalidateQueries({ queryKey: ['summaries'] })
-                router.push('/dashboard')
+                router.push(`/summary/${data.summaryId}`)
             }
         } catch (error: any) {
             console.log('Error uploading file', error);
@@ -119,6 +120,7 @@ export default function UploadForm() {
                                 <span className="bg-background px-3 text-muted-foreground text-sm">Processing</span>
                             </div>
                         </div>
+                        <UploadSummarySkeleton/>
                     </>
                 )
             }
