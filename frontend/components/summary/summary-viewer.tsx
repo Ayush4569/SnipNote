@@ -11,9 +11,11 @@ import {
 import { ChevronLeft, ChevronRight } from "lucide-react"
 
 export default function SummaryViewer({
-  summaryText
+  summaryText,
+  className
 }: {
   summaryText: SummarySlide[]
+  className?: string
 }) {
   const [currentSlideIdx, setCurrentSlideIdx] = useState(0)
 
@@ -38,7 +40,7 @@ export default function SummaryViewer({
         {summaryText.map((slide, idx) => (
 
           <div key={idx} className="w-full shrink-0 px-0.5 ">
-            <Card className="relative flex flex-col h-[60vh] sm:h-[65vh] max-h-[600px] rounded-3xl overflow-hidden border-0 shadow-none sm:border sm:shadow-xs">
+            <Card className="relative flex flex-col h-[60vh] sm:h-[65vh] max-h-[600px] rounded-3xl overflow-hidden  shadow-none sm:border sm:shadow-xs">
               <div className="absolute top-4 left-0 right-0 flex justify-center gap-2">
                 {summaryText.map((_, i) => (
                   <div

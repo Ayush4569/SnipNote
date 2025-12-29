@@ -21,10 +21,10 @@ export default function Login() {
   };
   
   return (
-    <section className="flex min-h-screen flex-col md:flex-row items-center justify-center ">
-        <BgGradient className="from-rose-400 via-rose-300 to-orange-200"/>
+    <section className="flex h-full w-full min-h-screen flex-col-reverse md:flex-row items-center justify-center gap-y-14 md:gap-y-0">
+        <BgGradient className=" from-rose-400 via-rose-300 to-orange-200"/>
       
-      <div className="hidden md:flex w-1/2 h-full flex-col justify-center items-center text-center px-10">
+      <div className="md:flex md:w-1/2 h-full flex-col justify-center items-center text-center px-10">
         <h1 className="text-4xl font-bold text-gray-800 mb-4">Welcome to Snipnote</h1>
         <p className="text-gray-600 text-lg max-w-sm">
           Summarize, explore, and understand PDFs smarter and faster with AI-powered insights.
@@ -39,8 +39,8 @@ export default function Login() {
       </div>
 
       {/* Right section - Login card */}
-      <div className="flex  w-full md:w-1/2 h-screen md:h-auto justify-center items-center">
-        <div className="bg-white border border-rose-500 md:border-none shadow-lg rounded-2xl p-10 mx-6 sm:w-[90%] md:w-[70%] lg:w-[60%]">
+      <div className="flex w-full md:w-1/2  md:h-auto justify-center items-center">
+        <div className="bg-white shadow-lg rounded-2xl p-10 mx-6 sm:w-[90%] md:w-[70%] lg:w-[60%]">
           <div className="flex  flex-col items-center gap-6">
             <h2 className="text-2xl font-semibold text-gray-800">Sign in to continue</h2>
 
@@ -59,13 +59,13 @@ export default function Login() {
 
             <p className="text-sm text-gray-500 text-center mt-4">
               By signing in, you agree to our{" "}
-              <a href="/terms" className="underline hover:text-gray-700">
+              <span className="underline hover:text-gray-700">
                 Terms
-              </a>{" "}
+              </span>{" "}
               &{" "}
-              <a href="/privacy" className="underline hover:text-gray-700">
+              <span  className="underline hover:text-gray-700">
                 Privacy Policy
-              </a>
+              </span>
             </p>
           </div>
         </div>

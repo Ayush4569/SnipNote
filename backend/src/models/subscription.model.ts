@@ -33,10 +33,7 @@ const subscriptionSchema: Schema<subscription> = new Schema({
         type: String,
         required: [true, 'razorpay plan id is required']
     },
-    razorpayCustomerId: {
-        type: String,
-        required: [true, 'razorpay customer id is required']
-    },
+    razorpayCustomerId: String,
     plan: {
         type: String,
         enum: ['basic', 'pro'],

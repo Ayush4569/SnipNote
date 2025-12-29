@@ -16,13 +16,13 @@ function HeaderSkeleton() {
           <Skeleton className="h-10 w-48 bg-neutral-200 rounded-lg" />
         </MotionH1>
 
-        <MotionP
+        <MotionH1
           variants={itemVariants}
           initial="hidden"
           animate="visible"
         >
           <Skeleton className="h-6 w-72 sm:w-96 bg-neutral-200 rounded-md" />
-        </MotionP>
+        </MotionH1>
       </div>
 
       <MotionDiv

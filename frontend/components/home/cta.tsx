@@ -1,11 +1,8 @@
-'use client';
 import Link from "next/link";
 import { Button } from "../ui/button";
 import { ArrowRight } from "lucide-react";
-import { useAuth } from "@/context/auth.context";
 
 export default function CTASection() {
-    const {status}= useAuth()
     return (
         <section className="bg-gray-50 py-12">
             <div className="py-12 lg:py-24 max-w-5xl mx-auto px-4 sm:px-6 lg:px-8">
@@ -27,9 +24,7 @@ export default function CTASection() {
                                 className="w-full min-[400px]:w-auto bg-linear-to-r from-slate-900 to-rose-500 hover:from-rose-500 hover:to-slate-900 text-white hover:text-white trasition-all duration-300 flex items-center justify-center"
                             >
                                 <Link
-                                    href={
-                                        status === 'authenticated' ? '/upload' : "/auth/login"
-                                    }
+                                    href='/#pricing'
                                     className="flex items-center justify-center"
                                 >
                                     Get Started {' '}

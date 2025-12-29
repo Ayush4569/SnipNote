@@ -6,7 +6,7 @@ export const fileRouter = {
 
   pdfUploader: f({
     "application/pdf": {
-      maxFileSize: "1GB",
+      maxFileSize: "32MB",
       maxFileCount: 1,
     },
   })

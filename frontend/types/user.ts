@@ -5,4 +5,5 @@ export interface User {
     picture?: string | null;
     createdAt?: string;
     isPro : boolean
+    canGeneratePdf: boolean
 }

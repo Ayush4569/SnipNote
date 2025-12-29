@@ -16,7 +16,7 @@ export const plans: Plan[] = [
         features: [
             "5 PDF summaries per month",
             "Max PDF size 10MB",
-            "Max 10 pages per PDF"
+            "Max 15 pages per PDF"
         ]
     },
     {
@@ -25,9 +25,9 @@ export const plans: Plan[] = [
         price: 399,
         description: "For frequent users",
         features: [
-            "20 PDF summaries per month",
-            "Max PDF size 30MB",
-            "Max 30 pages per PDF",
+            "25 PDF summaries per month",
+            "Max PDF size 25MB",
+            "Max 50 pages per PDF",
             "24/7 Support",
         ]
     }

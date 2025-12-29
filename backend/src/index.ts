@@ -1,46 +1,40 @@
-import express, { Request, Response } from 'express';
-import cors from 'cors';
-import cookieParser from 'cookie-parser';
-import { config } from './env';
-import { connectDB } from './database/db';
-import authRoutes from './routes/auth.route';
-import summaryRoutes from './routes/summary.route';
-import subscriptionRoutes,{webHookRouter} from './routes/subscription.route';
-import { errorHandler } from './utils/apiError';
-const app = express();
+import express from 'express'
+import cors from 'cors'
+import cookieParser from 'cookie-parser'
+import { config } from './env'
+import { connectDB } from './database/db'
+import authRoutes from './routes/auth.route'
+import summaryRoutes from './routes/summary.route'
+import { webHookRouter, subscriptionRoutes } from './routes/subscription.route'
+import { errorHandler } from './utils/apiError'
 
+const app = express()
 
-// Connect to the database
-connectDB(config.DATABASE_URL);
+connectDB(config.DATABASE_URL)
 
-// Middlewares
 app.use(cors({
-    origin: ['http://localhost:3000'],
-    methods: ['GET', 'POST', 'PUT', 'DELETE','PATCH', 
-    ],
-    allowedHeaders: ['Content-Type', 'Authorization'],
-    credentials: true,
+  origin: ['http://localhost:3000'],
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH'],
+  allowedHeaders: ['Content-Type', 'Authorization'],
+  credentials: true,
 }))
 
-app.use("/payment", webHookRouter)
-app.use(express.json());
+app.use('/api/subscriptions/webhook', webHookRouter)
+
+app.use(express.json())
 app.use(cookieParser())
-app.use(express.urlencoded({ extended: true }));
+app.use(express.urlencoded({ extended: true }))
 
-// Sample route
-app.get('/', (req: Request, res: Response) => {
-    res.send('Snipnote Backend is running!');
-});
-app.use('/api/auth',authRoutes)
-app.use('/api/summary',summaryRoutes)
-app.use('/api/subscriptions',subscriptionRoutes)
+app.get('/', (_, res) => {
+  res.send('Snipnote Backend is running!')
+})
 
-
-
+app.use('/api/auth', authRoutes)
+app.use('/api/summary', summaryRoutes)
+app.use('/api/subscriptions', subscriptionRoutes)
 
 app.use(errorHandler)
-// Start the server
-app.listen(config.PORT, () => {
-    console.log(`Server is running on http://localhost:${config.PORT}`);
-});
 
+app.listen(config.PORT, () => {
+  console.log(`Server running on http://localhost:${config.PORT}`)
+})

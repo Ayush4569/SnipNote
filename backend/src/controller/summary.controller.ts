@@ -74,7 +74,7 @@ const generateSummary = asyncHandler(async (req: Request, res: Response) => {
     throw new CustomError(400, 'Free tier users can only summarize PDFs with up to 15 pages. Please upgrade to Pro for larger documents.')
   }
 
-  if (user.isPro && pages > 60) {
+  if (user.isPro && pages > 55) {
     newSummary.status = 'failed'
     newSummary.error = 'Pro users can only summarize PDFs with up to 60 pages'
     await newSummary.save()
@@ -153,6 +153,7 @@ const generateSummary = asyncHandler(async (req: Request, res: Response) => {
 
 })
 const getSummary = asyncHandler(async (req: Request, res: Response) => {
+  
   const { id } = req.params;
   if (!req.user || !req.user.id) {
     throw new CustomError(401, "Unauthorized")

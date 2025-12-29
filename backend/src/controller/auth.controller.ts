@@ -6,7 +6,8 @@ import { User } from "../models/user.model";
 import { decodeRefreshToken, generateAccessToken, generateRefreshToken } from "../utils/generateTokens";
 import { accessTokenOptions, refreshTokenOptions } from "../utils/cookiesOptions";
 import { CustomError } from "../utils/apiError";
-import { Model, Types } from "mongoose";
+import { Types } from "mongoose";
+import { Subscription } from "../models/subscription.model";
 
 const googleSignIn = asyncHandler(async (req: Request, res: Response) => {
     try {
@@ -64,7 +65,7 @@ const googleSignIn = asyncHandler(async (req: Request, res: Response) => {
             email: newUser.email,
             picture: newUser.picture || '',
             _id: newUser._id as Types.ObjectId,
-            isPro : newUser.isPro
+            isPro: newUser.isPro
         }
 
         const accessToken = generateAccessToken(user)
@@ -86,11 +87,21 @@ const getUser = asyncHandler(async (req: Request, res: Response) => {
     if (!req.user) {
         throw new CustomError(401, "Unauthorized")
     };
-    const user = await User.findById(req.user.id).select('_id name email picture');
+    const user = await User.findById(req.user.id).select("-refreshToken -googleId -__v -updatedAt -pdfSummaryFile  -subscriptionId");
 
     if (!user) {
         throw new CustomError(404, "User not found")
     }
+    let canGeneratePdf: boolean
+    if (user.isPro) {
+
+        const proUser = await Subscription.findOne({
+            userId: user._id,
+            status: "active"
+        })
+        canGeneratePdf = proUser?.canGeneratePdf() ?? false;
+    }
+    else canGeneratePdf = user.canGeneratePdf();
 
     res
         .status(200)
@@ -102,7 +113,8 @@ const getUser = asyncHandler(async (req: Request, res: Response) => {
                 email: user.email,
                 picture: user.picture ?? "",
                 createdAt: user.createdAt,
-                isPro : user.isPro
+                isPro: user.isPro,
+                canGeneratePdf
             },
             message: "User fetched successfully",
         });
@@ -114,14 +126,14 @@ const refreshAccessToken = async (req: Request, res: Response) => {
     const incomingRefreshToken = req.cookies?.refreshToken;
 
     if (!incomingRefreshToken) {
-        throw new CustomError(401,"Unauthorized pls login to generate refreshToken")
+        throw new CustomError(401, "Unauthorized pls login to generate refreshToken")
     }
     const decodedUser = decodeRefreshToken(incomingRefreshToken);
     if (!decodedUser) {
-        throw new CustomError(401,"Invalid refresh token")
+        throw new CustomError(401, "Invalid refresh token")
     }
 
-    const user = await User.findById(decodedUser.id) ;
+    const user = await User.findById(decodedUser.id);
 
     if (!user) {
         res.status(401).clearCookie("refreshToken", incomingRefreshToken).json({
@@ -141,7 +153,15 @@ const refreshAccessToken = async (req: Request, res: Response) => {
         return;
     }
 
-    const accessToken = generateAccessToken({...user,_id:user._id as Types.ObjectId});
+    const accessToken = generateAccessToken(
+        {
+            name: user.name,
+            email: user.email,
+            picture: user.picture || '',
+            _id: user._id as Types.ObjectId,
+            isPro: user.isPro
+        }
+    );
     res
         .status(200)
         .cookie("accessToken", accessToken, accessTokenOptions)
@@ -149,6 +169,15 @@ const refreshAccessToken = async (req: Request, res: Response) => {
             {
                 success: true,
                 message: "Access token refreshed successfully",
+                user: {
+                    id: user._id,
+                    name: user.name,
+                    email: user.email,
+                    picture: user.picture ?? "",
+                    createdAt: user.createdAt,
+                    isPro: user.isPro,
+                    canGeneratePdf:user.canGeneratePdf()
+                }
             }
         );
     return;
@@ -157,11 +186,11 @@ const refreshAccessToken = async (req: Request, res: Response) => {
 const logoutUser = async (req: Request, res: Response) => {
     const user = req.user;
     if (!user) {
-        throw new CustomError(401,"Unauthorized")
+        throw new CustomError(401, "Unauthorized")
     }
-    await User.findByIdAndUpdate(user.id, { 
+    await User.findByIdAndUpdate(user.id, {
         refreshToken: null
-     });
+    });
     res
         .status(200)
         .clearCookie("accessToken", accessTokenOptions)
@@ -173,9 +202,9 @@ const logoutUser = async (req: Request, res: Response) => {
     return;
 }
 
-export { 
+export {
     googleSignIn,
     getUser,
     refreshAccessToken,
     logoutUser
- };
+};

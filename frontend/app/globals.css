@@ -187,3 +187,6 @@
 .no-scrollbar::-webkit-scrollbar {
   display: none; /* Chrome, Safari, Opera */
 }
+.drop-shadow-glow {
+  filter: drop-shadow(0 0 6px #facc15);
+}
