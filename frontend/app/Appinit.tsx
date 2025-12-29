@@ -61,7 +61,8 @@ export default function AppInit({
                     null,
                     { withCredentials: true }
                 )
-                .then((res) => {
+                .then(({data}) => {
+                    login(data.user);
                     setStatus('authenticated');
                 })
                 .catch((error) => {

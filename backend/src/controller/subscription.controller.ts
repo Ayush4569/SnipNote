@@ -67,7 +67,7 @@ const createSubscription = asyncHandler(async (req: Request, res: Response) => {
 })
 
 const cancelSubscription = asyncHandler(async (req: Request, res: Response) => {
-    console.log("Cancel subscription request received",req.user);
+    
     
     if ([req.user, req.user?.id, req.user?.email].some(item => !item)) {
         throw new CustomError(400, 'Unauthorized')
@@ -75,7 +75,6 @@ const cancelSubscription = asyncHandler(async (req: Request, res: Response) => {
     const userSubscription = await Subscription.findOne({
         userId: req.user!.id,
     })
-    console.log("userSubscription",userSubscription);
 
     if (!userSubscription?.razorPaySubscriptionId) {
         throw new CustomError(400, 'No subscriptions found for user')
@@ -95,7 +94,6 @@ const cancelSubscription = asyncHandler(async (req: Request, res: Response) => {
 })
 
 const webhook = async (req: Request, res: Response) => {
-    console.log("Received webhook");
 
     try {
         const rawBody = req.body.toString('utf8')
@@ -103,16 +101,11 @@ const webhook = async (req: Request, res: Response) => {
         const signature = req.headers['x-razorpay-signature'] as string
 
 
-        console.log('headers', req.headers);
 
 
         if (!signature) {
             return res.status(400).json({ success: false, message: 'Missing signature' })
         }
-
-        console.log("Verifying signature", signature);
-
-
 
 
         const expectedSignature = crypto
@@ -127,7 +120,6 @@ const webhook = async (req: Request, res: Response) => {
         const data = JSON.parse(rawBody);
 
         const event = data.event;
-        console.log("Webhook event:", event);
 
 
         if (event === "subscription.activated") {
@@ -138,7 +130,7 @@ const webhook = async (req: Request, res: Response) => {
                 return;
 
             }
-            console.log("subscription for user:", sub);
+
 
             const updatedUser = await Subscription.updateOne(
                 { razorPaySubscriptionId: sub.id },
@@ -157,14 +149,12 @@ const webhook = async (req: Request, res: Response) => {
                 { isPro: true }
               )
 
-            console.log("Updated subscription:", updatedUser);
 
         }
 
 
         if (event === "subscription.cancelled") {
             const sub = data.payload.subscription.entity;
-            console.log("Cancelled subscription data:", sub);
             
             const cancelledUser = await Subscription.updateOne(
                 { razorPaySubscriptionId: sub.id },
@@ -175,7 +165,6 @@ const webhook = async (req: Request, res: Response) => {
             }, {
                 isPro: false
             })
-            console.log("Cancelled subscription:", cancelledUser);
         }
 
         if (event === "subscription.halted") {
