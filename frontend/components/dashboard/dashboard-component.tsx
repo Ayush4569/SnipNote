@@ -11,12 +11,12 @@ import EmptySummaryState from './empty-summary';
 import { MotionDiv, MotionH1, MotionP } from '../common/motion-helpers';
 import { itemVariants } from '@/lib/constants';
 import DashBoardLoadingSkeleton from '@/app/(post-login)/dashboard/loading';
-import { useRouter } from 'next/router';
+import { useRouter } from 'next/navigation';
 
 export default function DashboardComponent() {
     const { user, status } = useAuth();
-    const { data: summaries = [], isPending, isError, error } = useGetSummaries(user?.id || '');
     const router = useRouter()
+    const { data: summaries = [], isPending, isError, error } = useGetSummaries(user?.id || '');
     if (status === 'unauthenticated') {
         router.push('/auth/login')
         return null

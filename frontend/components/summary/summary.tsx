@@ -12,7 +12,7 @@ import { SummarySlide } from "@/types/summary";
 import { MotionDiv } from "../common/motion-helpers";
 import SummaryLoading from "@/app/(post-login)/summary/loading";
 import { useAuth } from "@/context/auth.context";
-import { useRouter } from "next/router";
+import { useRouter } from "next/navigation";
 
 export default function SummaryComponent() {
   const { id } = useParams();
