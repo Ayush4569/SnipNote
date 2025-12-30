@@ -1,34 +1,66 @@
 "use client";
-import { useEffect } from "react";
+
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Image from "next/image";
 import BgGradient from "../common/bg-gradient";
 import { Loader2 } from "lucide-react";
+import axios from "axios";
+import { useAuth } from "@/context/auth.context";
 
 export default function AuthSuccessPage() {
   const router = useRouter();
+  const [checkingAuth, setCheckingAuth] = useState(true);
+  const {login} = useAuth()
   useEffect(() => {
-    const interval = setTimeout(() => router.replace('/dashboard'), 1500);
-    return () => clearTimeout(interval);
-  }, [router])
-  
+    const checkAuth = async () => {
+      try {
+        const {data} = await axios.get(
+          `${process.env.NEXT_PUBLIC_BACKEND_URL}/auth`,
+          {
+              withCredentials: true,
+          }
+      );
+        if (data.success && data.user) {
+          login({ ...data.user })
+          router.replace("/dashboard");
+        } else {
+          router.replace("/auth/login");
+        }
+      } catch (err) {
+        router.replace("/auth/login");
+      } finally {
+        setCheckingAuth(false);
+      }
+    };
+
+    checkAuth();
+  }, [router]);
+
   return (
     <main className="flex min-h-screen flex-col items-center justify-center bg-gradient-to-br from-green-50 via-white to-green-100 p-6">
       <BgGradient />
+
       <div className="md:bg-white md:shadow-lg shadow-none md:rounded-2xl rounded-none md:p-10 p-6 max-w-md w-full text-center transition-all duration-300">
         <div className="flex justify-center mb-6">
-          <Image 
-          priority 
-          src="/authSuccess.svg" 
-          alt="Success illustration" 
-          width={200} 
-          height={200}
-          style={{ width: 200, height: 200 }}
-           />
+          <Image
+            priority
+            src="/authSuccess.svg"
+            alt="Success illustration"
+            width={200}
+            height={200}
+            style={{ width: 200, height: 200 }}
+          />
         </div>
-        <h1 className="text-3xl font-semibold text-green-600 mb-2">Login Successful</h1>
+
+        <h1 className="text-3xl font-semibold text-green-600 mb-2">
+          Login Successful
+        </h1>
+
         <p className="text-gray-700 mb-6">
-          Welcome back! You are being redirected to the dashboard...
+          {checkingAuth
+            ? "Verifying your session..."
+            : "Redirecting you to the dashboard..."}
         </p>
 
         <div className="flex justify-center">

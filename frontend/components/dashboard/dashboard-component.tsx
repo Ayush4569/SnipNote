@@ -11,11 +11,16 @@ import EmptySummaryState from './empty-summary';
 import { MotionDiv, MotionH1, MotionP } from '../common/motion-helpers';
 import { itemVariants } from '@/lib/constants';
 import DashBoardLoadingSkeleton from '@/app/(post-login)/dashboard/loading';
+import { useRouter } from 'next/router';
 
 export default function DashboardComponent() {
-    const { user } = useAuth();
+    const { user, status } = useAuth();
     const { data: summaries = [], isPending, isError, error } = useGetSummaries(user?.id || '');
-
+    const router = useRouter()
+    if (status === 'unauthenticated') {
+        router.push('/auth/login')
+        return null
+    }
     if (isPending) {
         return <DashBoardLoadingSkeleton />;
     }
@@ -105,7 +110,7 @@ export default function DashboardComponent() {
                     ) : (
                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 sm:gap-10">
                             {summaries?.map((item) => (
-                                <SummaryCard key={item._id} {...item}  />
+                                <SummaryCard key={item._id} {...item} />
                             ))}
                         </div>
                     )}

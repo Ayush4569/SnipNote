@@ -11,9 +11,14 @@ import SourceInfo from "./source-info";
 import { SummarySlide } from "@/types/summary";
 import { MotionDiv } from "../common/motion-helpers";
 import SummaryLoading from "@/app/(post-login)/summary/loading";
+import { useAuth } from "@/context/auth.context";
+import { useRouter } from "next/router";
 
 export default function SummaryComponent() {
   const { id } = useParams();
+  const {status} = useAuth()
+  const router = useRouter()
+  
 
   const { data, isError, error, isPending } =
     useGetSummaryById({ summaryId: id as string });
@@ -22,6 +27,11 @@ export default function SummaryComponent() {
     if (!data?.wordCount) return 0;
     return Math.ceil(data.wordCount / 200);
   }, [data?.wordCount]);
+
+  if(status === 'unauthenticated') {
+    router.push('/auth/login')
+    return null
+  }
 
   if (isPending) {
     return <SummaryLoading />;

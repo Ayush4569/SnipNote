@@ -8,11 +8,14 @@ import { queryClient } from '@/lib/tanstack'
 import { useQuery } from '@tanstack/react-query'
 import { User } from '@/types/user'
 import axios from 'axios'
+import { useAuth } from '@/context/auth.context'
 
 const MAX_WAIT_TIME = 60000
 const REFRESH_INTERVAL = 2000
 
 export default function VerifyingPaymentPage() {
+  const { status } = useAuth();
+
   const router = useRouter()
 
   const [timedOut, setTimedOut] = useState(false)
@@ -22,19 +25,23 @@ export default function VerifyingPaymentPage() {
     queryKey: ['user'],
     queryFn: async () => {
       const res = await axios.get(
-          `${process.env.NEXT_PUBLIC_BACKEND_URL}/auth`,
-          {
-              withCredentials: true,
-          }
+        `${process.env.NEXT_PUBLIC_BACKEND_URL}/auth`,
+        {
+          withCredentials: true,
+        }
       );
       return res.data.user as User;
-  },
-    refetchInterval: ({state}) => {
+    },
+    refetchInterval: ({ state }) => {
       if (state.data?.isPro) return false
       return REFRESH_INTERVAL
     },
     refetchOnWindowFocus: false,
   })
+  if (status === 'unauthenticated') {
+    router.push('/auth/login')
+    return null;
+  }
 
   useEffect(() => {
     if (user?.isPro) {

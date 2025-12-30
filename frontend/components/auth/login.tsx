@@ -2,8 +2,16 @@
 import Image from "next/image";
 import { Button } from "../ui/button";
 import BgGradient from "../common/bg-gradient";
+import { useAuth } from "@/context/auth.context";
+import { useRouter } from "next/navigation";
 
 export default function Login() {
+  const {status} = useAuth()
+  const router = useRouter()
+  if(status === 'authenticated') {
+    router.push('/dashboard')
+    return null
+  }
   const handleGoogleLogin = () => {
     const clientId = process.env.NEXT_PUBLIC_GOOGLE_CLIENT_ID!;
     const redirectUri = `${process.env.NEXT_PUBLIC_BACKEND_URL!}/auth/google/callback`;
@@ -19,6 +27,7 @@ export default function Login() {
   
     window.location.href = googleAuthUrl;
   };
+  
   
   return (
     <section className="flex h-full w-full min-h-screen flex-col-reverse md:flex-row items-center justify-center gap-y-14 md:gap-y-0">
