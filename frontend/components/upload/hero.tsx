@@ -18,7 +18,7 @@ export default function UploadHeader (){
             </MotionDiv>
 
             <MotionDiv variants={itemVariants} className="capitalize font-bold text-3xl tracking-tight text-gray-900 sm:text-4xl">
-           Start Uploading Your PDF's
+           Start Uploading Your PDF&apos;s
             </MotionDiv>
 
             <MotionDiv variants={itemVariants} className="mt-2 text-lg leading-8 text-gray-600 max-w-2xl text-center">

@@ -116,7 +116,7 @@ export default function UploadForm() {
                 queryClient.invalidateQueries({ queryKey: ['summaries'] });
                 router.push(`/summary/${data.summaryId}`);
             }
-        } catch (error: any) {
+        } catch (error) {
             toast.error(
                 isAxiosError(error) ? error.response?.data.message : 'Error uploading file');
             deleteFile(response[0].key);

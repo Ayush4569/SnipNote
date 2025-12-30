@@ -87,7 +87,7 @@ export default function DashboardComponent() {
                         >
                             <div className="border bg-blue-50 border-teal-200 rounded-xl p-4 text-teal-800 font-mono shadow-md backdrop-blur-md">
                                 <p className="text-sm">
-                                    You've reached the limit of uploads on your plan.{' '}
+                                    You&apos;ve reached the limit of uploads on your plan.{' '}
                                     <Link
                                         href="/#pricing"
                                         className="text-teal-800 underline font-medium underline-offset-4 inline-flex items-center"
@@ -104,8 +104,8 @@ export default function DashboardComponent() {
                         <EmptySummaryState />
                     ) : (
                         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 sm:gap-10">
-                            {summaries?.map((item: any, idx: number) => (
-                                <SummaryCard key={item._id} {...item} index={idx} />
+                            {summaries?.map((item) => (
+                                <SummaryCard key={item._id} {...item}  />
                             ))}
                         </div>
                     )}

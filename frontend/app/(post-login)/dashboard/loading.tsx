@@ -1,5 +1,5 @@
 import BgGradient from "@/components/common/bg-gradient";
-import { MotionDiv, MotionH1, MotionP } from "@/components/common/motion-helpers";
+import { MotionDiv, MotionH1 } from "@/components/common/motion-helpers";
 import { Skeleton } from "@/components/ui/skeleton";
 import { itemVariants } from "@/lib/constants";
 

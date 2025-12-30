@@ -84,11 +84,12 @@ function PlanCard({ id, name, price, description, features }: Plan) {
         { withCredentials: true }
       )
 
-      const razorpay = new (window as any).Razorpay({
+      const options = {
         key: data.keyId,
         subscription_id: data.subscriptionId,
         name: "Snipnote Pro",
         description: "Get more AI summaries",
+
         theme: { color: "#E11D48" },
         handler: () => {
           window.location.href = "/verifying-payment"
@@ -97,7 +98,9 @@ function PlanCard({ id, name, price, description, features }: Plan) {
           email: user.email,
           name: user.name,
         },
-      })
+      }
+
+      const razorpay = new window.Razorpay(options)
 
       razorpay.open()
     } catch (error) {
