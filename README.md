@@ -1,6 +1,7 @@
 # ✂️ Snipnote — AI-Powered PDF Summarizer  
 👉 https://snipnote-v1.vercel.app  
 
+![Docker](https://img.shields.io/badge/Dockerized-%231572B6.svg?style=for-the-badge&logo=docker&logoColor=white)
 ![Node.js](https://img.shields.io/badge/Node.js-%23339933.svg?style=for-the-badge&logo=node.js&logoColor=white)
 ![Next.js](https://img.shields.io/badge/Next.js-%23000000.svg?style=for-the-badge&logo=next.js&logoColor=white)
 ![MongoDB](https://img.shields.io/badge/MongoDB-%2347A248.svg?style=for-the-badge&logo=mongodb&logoColor=white)
