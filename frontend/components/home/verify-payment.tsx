@@ -38,11 +38,6 @@ export default function VerifyingPaymentPage() {
     },
     refetchOnWindowFocus: false,
   })
-  if (status === 'unauthenticated') {
-    router.push('/auth/login')
-    return null;
-  }
-
   useEffect(() => {
     if (user?.isPro) {
       queryClient.invalidateQueries({ queryKey: ['user'] })
@@ -59,6 +54,11 @@ export default function VerifyingPaymentPage() {
 
     return () => clearInterval(timer)
   }, [startTime])
+
+  if (status === 'unauthenticated') {
+    router.push('/auth/login')
+    return null;
+  }
 
   return (
     <div className="min-h-screen flex items-center justify-center bg-linear-to-b from-rose-50 to-white px-4">
