@@ -25,6 +25,7 @@ This project was built from scratch with an emphasis on **real-world SaaS archit
 - 🪄 **Emoji-Enhanced Headings** — Improved readability and engagement
 - 📁 **PDF Parsing & Validation** — Page count, file size, and text extraction checks
 - 🔐 **Free vs Pro Limits** — Enforced limits on PDFs/month, pages, and file size
+- 🐳 Dockerized Backend — Fully containerized Node.js backend for easy deployment
 - 💳 **Subscription Ready** — Pro tier support with Razorpay integration
 - 🧪 **AI Output Safety** — Defensive JSON extraction, validation, and retry logic
 - 🚦 **Rate-Limit Friendly** — Designed to safely operate within Gemini free-tier constraints
@@ -53,6 +54,10 @@ This project was built from scratch with an emphasis on **real-world SaaS archit
   - Gemini is prompted to return **strict JSON only**
   - Backend validates, sanitizes, and retries invalid AI responses
   - Prevents token waste and broken summaries
+    
+-  📦 **Dockerized Environment
+  - Separate containers for backend server and Redis.
+  - Local development mirrors production setup.
 
 - 📦 **Slide-Based Summary Model**
   - Each summary is stored as structured slides:
