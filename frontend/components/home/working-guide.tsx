@@ -1,5 +1,5 @@
 import { BrainCircuit, FileOutput, FileText, MoveDown, MoveRight } from "lucide-react";
-import { MotionDiv, MotionH2, MotionH3 } from "../common/motion-helpers";
+import { MotionDiv, MotionH2 } from "../common/motion-helpers";
 
 interface Steps {
     title: string;

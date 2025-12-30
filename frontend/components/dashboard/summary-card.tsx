@@ -10,7 +10,6 @@ import { itemVariants } from "@/lib/constants"
 
 export default function SummaryCard({
     _id,
-    pdfUrl,
     fileName,
     createdAt,
     error,

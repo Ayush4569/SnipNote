@@ -12,10 +12,8 @@ import { ChevronLeft, ChevronRight } from "lucide-react"
 
 export default function SummaryViewer({
   summaryText,
-  className
 }: {
   summaryText: SummarySlide[]
-  className?: string
 }) {
   const [currentSlideIdx, setCurrentSlideIdx] = useState(0)
 

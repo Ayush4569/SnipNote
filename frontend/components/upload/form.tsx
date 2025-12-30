@@ -6,7 +6,7 @@ import { queryClient } from "@/lib/tanstack";
 import { useUploadThing } from "@/lib/upload-thing";
 import { fileUploadSchema } from "@/schemas/upload.schema";
 import axios, { isAxiosError } from "axios";
-import { Loader2Icon, FileText, UploadCloud, XCircle, Trash2 } from "lucide-react";
+import { Loader2Icon, FileText, UploadCloud, Trash2 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useRef, useState, useCallback } from "react";
 import { toast } from "sonner";
