@@ -122,67 +122,6 @@ const getUser = asyncHandler(async (req: Request, res: Response) => {
 })
 
 
-const refreshAccessToken = async (req: Request, res: Response) => {
-    const incomingRefreshToken = req.cookies?.refreshToken;
-
-    if (!incomingRefreshToken) {
-        throw new CustomError(401, "Unauthorized pls login to generate refreshToken")
-    }
-    const decodedUser = decodeRefreshToken(incomingRefreshToken);
-    if (!decodedUser) {
-        throw new CustomError(401, "Invalid refresh token")
-    }
-
-    const user = await User.findById(decodedUser.id);
-
-    if (!user) {
-        res.status(401).clearCookie("refreshToken", incomingRefreshToken).json({
-            success: false,
-            message: "User not found",
-        })
-        return;
-    }
-    if (incomingRefreshToken !== user.refreshToken) {
-        res.
-            status(401).
-            clearCookie("refreshToken", incomingRefreshToken).
-            json({
-                success: false,
-                message: "Token mismatch, please login again",
-            })
-        return;
-    }
-
-    const accessToken = generateAccessToken(
-        {
-            name: user.name,
-            email: user.email,
-            picture: user.picture || '',
-            _id: user._id as Types.ObjectId,
-            isPro: user.isPro
-        }
-    );
-    res
-        .status(200)
-        .cookie("accessToken", accessToken, accessTokenOptions)
-        .json(
-            {
-                success: true,
-                message: "Access token refreshed successfully",
-                user: {
-                    id: user._id,
-                    name: user.name,
-                    email: user.email,
-                    picture: user.picture ?? "",
-                    createdAt: user.createdAt,
-                    isPro: user.isPro,
-                    canGeneratePdf:user.canGeneratePdf()
-                }
-            }
-        );
-    return;
-}
-
 const logoutUser = async (req: Request, res: Response) => {
     const user = req.user;
     if (!user) {
@@ -205,6 +144,5 @@ const logoutUser = async (req: Request, res: Response) => {
 export {
     googleSignIn,
     getUser,
-    refreshAccessToken,
     logoutUser
 };
