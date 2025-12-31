@@ -14,6 +14,8 @@ export default function AppInit({
         hasRefreshToken: boolean
     }) {
 
+    console.log("AppInit rendered with:", { hasAccessToken, hasRefreshToken });
+    
     const { login, logout, setLoading ,setStatus} = useAuth();
     const query = useQuery<UserState, Error>({
         queryKey: ["user"],
@@ -24,6 +26,8 @@ export default function AppInit({
                     withCredentials: true,
                 }
             );
+            console.log("Fetched user data:", res.data);
+            
             return res.data.user as UserState;
         },
         enabled: hasAccessToken,
@@ -32,6 +36,8 @@ export default function AppInit({
 
     useEffect(() => {
         if (query.isLoading) {
+            console.log("Fetching user data...");
+            
             setLoading()
         }
     }, [query.isLoading]);
@@ -44,12 +50,15 @@ export default function AppInit({
     useEffect(() => {
 
         if (query.data) {
+            console.log("User data fetched successfully:", query.data);
             login({ ...query.data })
         }
     }, [query.isSuccess, query.data]);
 
     useEffect(() => {
         if (!hasAccessToken && !hasRefreshToken) {
+            console.log("Neither access token nor refresh token present. Logging out.");
+            
             logout()
             return;
         }
