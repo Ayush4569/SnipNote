@@ -1,11 +1,11 @@
 import { GoogleGenAI, ApiError } from "@google/genai";
-import { extractJsonArray } from "../utils/pdf.tools";
-import { SummaryType } from "schemas/summary";
+import { extractJsonArray, safeParseJsonArray, validateSlides } from "../utils/pdf.tools";
+import { SummaryType } from "../schemas/summary";
+import { retryPrompt } from "../utils/system.prompt";
 
 const ai = new GoogleGenAI({
     apiKey: process.env.GEMINI_API_KEY as string
 })
-
 
 export const getSummaryFromGemini = async (pdfContent: string) => {
     try {
@@ -17,7 +17,7 @@ export const getSummaryFromGemini = async (pdfContent: string) => {
                     role: 'user',
                     parts: [
                         {
-                        text: `You are an expert technical summarizer.
+                            text: `You are an expert technical summarizer.
                             Convert the following document into a structured summary strictly in JSON format.
 
                             RULES (VERY IMPORTANT):
@@ -29,7 +29,7 @@ export const getSummaryFromGemini = async (pdfContent: string) => {
                               - "heading": a short, clear title (string, no # symbols)
                               - "points": an array of concise bullet points (strings)
                             - Use relevant emojis inside headings or points where appropriate.
-                            - Keep each slide focused (3–6 bullet points per slide).
+                             - Ensure each slide has minimum 8 points.
                             - Do NOT nest objects.
 
                             JSON FORMAT:
@@ -40,8 +40,7 @@ export const getSummaryFromGemini = async (pdfContent: string) => {
                               }
                             ]
                             
-                            - Ensure each slide has minimum 8 points.
-
+                           
                             DOCUMENT:
                             ${pdfContent}`
 
@@ -51,37 +50,39 @@ export const getSummaryFromGemini = async (pdfContent: string) => {
             ],
             config: {
                 temperature: 0.7,
-                maxOutputTokens: 1500 
+                maxOutputTokens: 1500
             }
         })
 
-        const santizedJsonArray = extractJsonArray(response.text as string)
-        const parsedSlides = JSON.parse(santizedJsonArray as string)
-        if(!Array.isArray(parsedSlides)) {
-            return {
-                success: false,
-                status: 400,
-                message: "Invalid json array",
-                summary: null
-            }
-        }
-        for (const slide of parsedSlides) {
-            if (
-              typeof slide.heading !== "string" ||
-              !Array.isArray(slide.points)
-            ) {
+        const rawText = response.text as string;
+        const extractJsonContent = extractJsonArray(rawText);
+        let slides = extractJsonContent ? safeParseJsonArray(extractJsonContent) : null;
+        let totalTokens = response.usageMetadata?.totalTokenCount || 0;
+        if (!slides || !validateSlides(slides)) {
+            const retry = await ai.models.generateContent({
+                model: process.env.MODEL!,
+                contents: [{ role: "user", parts: [{ text: retryPrompt(pdfContent) }] }],
+                config: { temperature: 0.2, maxOutputTokens: 1200 }
+            })
+
+            const retryExtracted = extractJsonArray(retry.text as string);
+            slides = retryExtracted ? safeParseJsonArray(retryExtracted) : null;
+            if (!Array.isArray(slides)) slides = null;
+            if (!slides || !validateSlides(slides)) {
                 return {
                     success: false,
-                    status: 400,
-                    message: "Invalid slide structure from AI",
+                    status: 422,
+                    message: "AI returned malformed summary JSON",
                     summary: null
-                }
+                };
             }
+            totalTokens += retry.usageMetadata?.totalTokenCount || 0;
         }
-        const slidesWithIdx = parsedSlides.map((s:any, i:number) => ({
-        idx: i,
-        heading: s.heading,
-        points: s.points,
+
+        const slidesWithIdx = slides.map((s: any, i: number) => ({
+            idx: i,
+            heading: s.heading,
+            points: s.points,
         }))
 
         return {

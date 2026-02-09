@@ -40,3 +40,29 @@ Example format:
 • 💡 This is another example point
 
 Never deviate from this format. Every line that contains content must start with "• " followed by an emoji.`;
+
+export const retryPrompt = (safePdfContent: string): string => {
+    return `
+You are an expert technical summarizer.
+
+The previous response failed due to INVALID JSON formatting.
+
+IMPORTANT:
+- Output ONLY valid JSON
+- No markdown
+- No explanations
+- No trailing text
+- Use simple ASCII quotes only
+
+JSON FORMAT:
+[
+  {
+    "heading": "string",
+    "points": ["string"]
+  }
+]
+
+DOCUMENT:
+${safePdfContent}
+`;
+}
