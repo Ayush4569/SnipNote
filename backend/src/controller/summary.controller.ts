@@ -1,159 +1,208 @@
 import { Request, Response } from 'express';
-import { CustomError } from '../utils/apiError';
+import { CustomError, failSummary } from '../utils/apiError';
 import { PDFParse } from 'pdf-parse';
 import { asyncHandler } from '../utils/asyncHandler';
-import { getSummaryFromGemini } from '../services/gemini.service';
-import { calculateWordCount, cleanPDFText } from '../utils/pdf.tools';
+import { ChunkSummarizer } from '../services/gemini.service';
+import { calculateWordCount, cleanPDFText, structureText } from '../utils/pdf.tools';
 import { Summary } from '../models/summary.model';
 import { fileUploadSchema } from '../schemas/upload';
 
 import { User } from '../models/user.model';
 import mongoose from 'mongoose';
 import { Subscription } from '../models/subscription.model';
-import { SummarySchema, SummaryType } from '../schemas/summary';
-const generateSummary = asyncHandler(async (req: Request, res: Response) => {
-  if (!req.user || !req.user.id) {
-    throw new CustomError(401, "Unauthorized")
-  }
-  const user = await User.findById(req.user.id)
+import { SummaryType } from '../schemas/summary';
+import { Chunking } from '../utils/chunking';
+import { summarizeTextWithGemini } from '../services/sample';
 
-  if (!user) {
-    throw new CustomError(401, "Unauthorized")
-  }
+const generateSummary = asyncHandler(async (req: Request, res: Response) => {
+  if (!req.user?.id) throw new CustomError(401, "Unauthorized");
+
+
+  const user = await User.findById(req.user.id);
+  if (!user) throw new CustomError(401, "Unauthorized");
+
 
   if (!user.isPro && user.pdfPerMonth <= 0) {
-    throw new CustomError(403, 'You have reached the monthly limit of PDF summaries. Please upgrade to Pro for more access.')
+    throw new CustomError(403, 'Monthly PDF limit reached. Upgrade to Pro.');
   }
 
 
   let premiumUser = null;
   if (user.isPro) {
-    premiumUser = await Subscription.findOne({ userId: user.id, status: 'active' })
+    premiumUser = await Subscription.findOne({ userId: user.id, status: 'active' });
     if (premiumUser && !premiumUser.canGeneratePdf()) {
-      throw new CustomError(403, 'You have reached the monthly limit of PDF summaries for Pro users')
+      throw new CustomError(403, 'Pro monthly limit reached.');
     }
   }
 
+
   const { fileUrl, fileName } = req.body;
-
   const result = fileUploadSchema.safeParse({ fileUrl, fileName });
+  if (!result.success) throw new CustomError(400, "Invalid file upload data");
 
-  if (!result.success) {
-    throw new CustomError(400, "Invalid file upload data");
-  }
-  const newSummary = new Summary({
+
+  const newSummary = await Summary.create({
     userId: user.id,
     pdfUrl: fileUrl,
     fileName,
     status: 'processing'
-  })
-  await newSummary.save()
+  });
 
-  let parser: PDFParse;
-  let pages: number = 0;
+
+  let parser: PDFParse | null;
+  let pages = 0;
+
+
   try {
-    parser = new PDFParse({ url: fileUrl })
-    pages = (await parser.getInfo({ parsePageInfo: true })).total
-  } catch (error) {
-    newSummary.status = 'failed'
-    newSummary.error = 'Error processing PDF file'
-    await newSummary.save()
-    throw new CustomError(500, 'Error processing PDF file')
-  }
-  
-  if (pages === 0) {
-    newSummary.status = 'failed'
-    newSummary.error = 'The PDF file is empty'
-    await newSummary.save()
-    throw new CustomError(400, 'The PDF file is empty')
-  }
-  if (!user.isPro && pages > 15) {
-    newSummary.status = 'failed'
-    newSummary.error = 'Free tier users can only summarize PDFs with up to 15 pages'
-    await newSummary.save()
-    throw new CustomError(400, 'Free tier users can only summarize PDFs with up to 15 pages. Please upgrade to Pro for larger documents.')
+    parser = new PDFParse({ url: fileUrl });
+    pages = (await parser.getInfo({ parsePageInfo: true })).total;
+  } catch {
+    await failSummary(newSummary, 500, 'Error processing PDF file');
+    return;
   }
 
-  if (user.isPro && pages > 55) {
-    newSummary.status = 'failed'
-    newSummary.error = 'Pro users can only summarize PDFs with up to 60 pages'
-    await newSummary.save()
-    throw new CustomError(400, 'Pro users can only summarize PDFs with up to 60 pages')
-  }
 
-  let refinedText: string
-  try {
-    const { text } = await parser.getText();
-    refinedText = cleanPDFText(text);
-  } finally {
-    parser = null as any
-  }
+  if (!parser) await failSummary(newSummary, 400, 'Parser not initialized');
+  else if (!pages) await failSummary(newSummary, 400, 'PDF is empty');
+
+
+  else if (!user.isPro && pages > 15)
+    await failSummary(newSummary, 400, 'Free tier limit: 15 pages max.');
+
+
+  else if (user.isPro && pages > 55)
+    await failSummary(newSummary, 400, 'Pro tier limit: 55 pages max.');
+
+
+  const { text } = await parser.getText();
+
+  let refinedText = cleanPDFText(text);
+  parser = null as any;
+
 
   if (!refinedText.trim()) {
-    newSummary.status = 'failed'
-    newSummary.error = 'PDF contains invalid content'
-    await newSummary.save()
-    throw new CustomError(400, 'PDF contains invalid content')
+    await failSummary(newSummary, 400, 'PDF contains invalid content');
+    return;
   }
 
-  const { success, summary, status, message, tokensUsed } = await getSummaryFromGemini(refinedText)
+  const paragraphs = structureText(refinedText);
 
-  refinedText = ''
-  const summaryValidationResult = SummarySchema.safeParse(summary)
-  if (!summaryValidationResult.success) {
-    newSummary.status = 'failed'
-    newSummary.error = 'Gemini summary format error'
-    newSummary.tokenUsed = (tokensUsed)
+  const SAFE_SINGLE_PASS_LIMIT = 10000;
+  const shouldChunk = refinedText.length > SAFE_SINGLE_PASS_LIMIT;
 
-    await newSummary.save()
 
-    throw new CustomError(status || 500, "Gemini summary format error")
+  let finalSlides: SummaryType[] = [];
+  let totalTokens = 0;
+
+
+  if (shouldChunk) {
+
+    const MAX_CHUNK_SIZE = 9000;
+    const builder = new Chunking(paragraphs, MAX_CHUNK_SIZE);
+    const chunks = builder.buildChunks();
+    console.log('total chunks created :', chunks.length);
+    const MAX_CHUNKS = 10;
+    const MAX_TOTAL_TOKENS = 30000;
+    let chunkCount = 0;
+    const microNotes: string[] = [];
+    const micro = new ChunkSummarizer(process.env.GEMINI_API_KEY!);
+
+    for (const chunk of chunks) {
+      console.log('chunks generated :', ++chunkCount);
+
+      if (chunkCount > MAX_CHUNKS)
+        await failSummary(newSummary, 400, 'Document too large to process.');
+
+      const { rawText, tokensUsed } = await micro.contructChunkSummary(chunk)
+      microNotes.push(rawText);
+      totalTokens += tokensUsed || 0;
+
+      console.log('tokens used after chunk :', totalTokens);
+
+      if (totalTokens > MAX_TOTAL_TOKENS)
+        await failSummary(newSummary, 400, 'Token limit exceeded.');
+    }
+    const mergedNotes = microNotes.join("\n\n");
+    const targetSlides = Math.min(16, Math.max(4, Math.ceil(pages / 3)));
+    console.log('target slides :', targetSlides);
+    
+    const { slides, tokensUsed } = await micro.generateSlides(
+      mergedNotes,
+      targetSlides
+    );
+    totalTokens += tokensUsed;
+    console.log('tokens used after slide generation :', totalTokens);
+
+    finalSlides = slides.map((slide, idx) => ({
+      idx,
+      heading: slide.heading,
+      points: slide.points
+    }));
+
   }
 
-  if (!success || !summary) {
-    newSummary.status = 'failed'
-    newSummary.error = message || 'Error generating final summary from Gemini'
-    newSummary.tokenUsed = (tokensUsed)
 
-    await newSummary.save()
 
-    throw new CustomError(status || 500, message || "Error generating summary from Gemini")
+  else {
+    const { success, summary, status, message, tokensUsed } =
+      await summarizeTextWithGemini(refinedText);
+
+
+    totalTokens = tokensUsed || 0;
+
+
+    if (!success || !summary)
+      await failSummary(newSummary, status || 500, message || 'Summary failed', totalTokens);
+
+
+    finalSlides = summary!.map((slide, idx) => ({
+      idx,
+      heading: slide.heading,
+      points: slide.points
+    }));
   }
+
+
+  refinedText = '';
+
 
   const session = await mongoose.startSession();
+
+
   try {
     await session.withTransaction(async () => {
       newSummary.$session(session);
       user.$session(session);
       premiumUser?.$session(session);
 
+
       newSummary.status = 'completed';
-      newSummary.summaryText = summary;
-      newSummary.tokenUsed = tokensUsed;
+      newSummary.summaryText = finalSlides;
+      newSummary.tokenUsed = totalTokens;
+
+
       await newSummary.save({ session });
 
-      if (user.isPro && premiumUser) {
+
+      if (user.isPro && premiumUser)
         await premiumUser.incrementPdfUsage(session);
-      } else {
+      else
         await user.incrementPdfUsage(session);
-      }
     });
-  } catch (error: any) {
-    console.error('Transaction failed:', error.message);
-    throw new CustomError(500, 'Error finalizing summary generation')
   } finally {
-    session.endSession()
+    session.endSession();
   }
+
 
   return res.status(200).json({
     success: true,
     message: "Summary generated successfully",
-    summaryId : newSummary._id
-  })
+    summaryId: newSummary._id
+  });
+});
 
-})
 const getSummary = asyncHandler(async (req: Request, res: Response) => {
-  
+
   const { id } = req.params;
   if (!req.user || !req.user.id) {
     throw new CustomError(401, "Unauthorized")

@@ -68,6 +68,7 @@ export default function UploadForm() {
     const removeFile = (e: React.MouseEvent) => {
         e.stopPropagation();
         setSelectedFile(null);
+        if (uploadInputRef.current)  uploadInputRef.current.value = "";
     };
 
     const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
@@ -113,8 +114,8 @@ export default function UploadForm() {
                 toast.success(
                     data.message || 'File summarized successfully', { icon: '✅', duration: 3000 }
                 );
-                queryClient.invalidateQueries({ queryKey: ['summaries'] });
-                router.push(`/summary/${data.summaryId}`);
+                // queryClient.invalidateQueries({ queryKey: ['summaries'] });
+                // router.push(`/summary/${data.summaryId}`);
             }
         } catch (error) {
             toast.error(
@@ -122,6 +123,7 @@ export default function UploadForm() {
             deleteFile(response[0].key);
         } finally {
             setSelectedFile(null);
+            if (uploadInputRef.current) uploadInputRef.current.value = ""
             setLoading(false);
         }
     };

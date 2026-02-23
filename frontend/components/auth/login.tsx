@@ -15,7 +15,7 @@ export default function Login() {
 
   const { status } = useAuth();
   const router = useRouter();
-  const [isBackendReady, setIsBackendReady] = useState(false);
+  const [isBackendReady, setIsBackendReady] = useState(true);
 
 
   useEffect(() => {
@@ -24,25 +24,25 @@ export default function Login() {
     }
   }, [status, router]);
 
-  useEffect(() => {
-    let attempts = 0;
+  // useEffect(() => {
+  //   let attempts = 0;
 
-    const awakeServer = async () => {
-      try {
-        await axios.get(process.env.NEXT_PUBLIC_HEALTH_URL!, {
-          timeout: 4000,
-        });
-        setIsBackendReady(true);
-      } catch {
-        attempts++;
-        if (attempts < MAX_TRY) {
-          setTimeout(awakeServer, 3000);
-        }
-      }
-    };
+  //   const awakeServer = async () => {
+  //     try {
+  //       await axios.get(process.env.NEXT_PUBLIC_HEALTH_URL!, {
+  //         timeout: 4000,
+  //       });
+  //       setIsBackendReady(true);
+  //     } catch {
+  //       attempts++;
+  //       if (attempts < MAX_TRY) {
+  //         setTimeout(awakeServer, 3000);
+  //       }
+  //     }
+  //   };
 
-    awakeServer();
-  }, []);
+  //   awakeServer();
+  // }, []);
 
 
   const handleGoogleLogin = () => {

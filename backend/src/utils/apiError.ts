@@ -1,4 +1,5 @@
 import { Request, Response, NextFunction } from "express";
+import { type Summary } from "../models/summary.model";
 
 export class CustomError extends Error {
     statusCode: number;
@@ -19,7 +20,11 @@ export const errorHandler = (err: ErrorWithStatusCode, req: Request, res: Respon
     const statusCode = err.statusCode || 500
     const message = err.message || "Internal server error"
 
-    console.log("Error", err);
+    console.error("---- Error Occurred ----");
+    console.error("Method:", req.method);
+    console.error("Endpoint:", req.originalUrl);
+    console.error("Message:", err.message);
+    console.error("Stack:", err.stack);
 
     return res.
         status(statusCode)
@@ -28,3 +33,18 @@ export const errorHandler = (err: ErrorWithStatusCode, req: Request, res: Respon
             message
         })
 }
+
+export const failSummary = async (
+    summaryDoc: Summary,
+    statusCode: number,
+    message: string,
+    tokenUsed?: number
+  ):Promise<never> => {
+    summaryDoc.status = 'failed';
+    summaryDoc.error = message;
+    summaryDoc.tokenUsed = tokenUsed || 0;
+    summaryDoc.summaryText = [];
+    await summaryDoc.save();
+    throw new CustomError(statusCode, message);
+  };
+  

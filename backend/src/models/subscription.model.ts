@@ -3,7 +3,7 @@ import { Schema, model, Document, Model, ClientSession } from "mongoose";
 interface subscriptionMethods {
     canGeneratePdf: () => boolean
     isPlanExpired: () => boolean
-    incrementPdfUsage: (session:ClientSession) => Promise<this>
+    incrementPdfUsage: (session?:ClientSession) => Promise<this>
 }
 
 interface subscription extends subscriptionMethods, Document {

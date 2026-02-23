@@ -1,107 +1,135 @@
-import { GoogleGenAI, ApiError } from "@google/genai";
-import { extractJsonArray, safeParseJsonArray, validateSlides } from "../utils/pdf.tools";
+
+import {  GoogleGenAI } from "@google/genai";
 import { SummaryType } from "../schemas/summary";
-import { retryPrompt } from "../utils/system.prompt";
+import { CustomError } from "../utils/apiError";
 
-const ai = new GoogleGenAI({
-    apiKey: process.env.GEMINI_API_KEY as string
-})
+export class ChunkSummarizer {
+    private ai: GoogleGenAI
+    constructor(apiKey: string) {
+        this.ai = new GoogleGenAI({ apiKey });
+    }
 
-export const getSummaryFromGemini = async (pdfContent: string) => {
-    try {
-        const response = await ai.models.generateContent({
-            model: process.env.MODEL as string || 'gemini-2.5-flash-lite',
+    public async contructChunkSummary(chunk:string):Promise<{rawText:string,tokensUsed:number}> {
 
-            contents: [
-                {
-                    role: 'user',
+        try {
+            const response = await this.ai.models.generateContent({
+                model: "gemini-2.5-flash",
+                contents: [
+                  {
+                    role: "user",
                     parts: [
-                        {
-                            text: `You are an expert technical summarizer.
-                            Convert the following document into a structured summary strictly in JSON format.
+                      {
+                        text: `
+        You are a technical content compressor.
+        
+        Convert the following content into dense technical notes.
+        
+        RULES:
+        - Do NOT generate slides.
+        - Do NOT generate JSON.
+        - No markdown.
+        - No explanations.
+        - Avoid repetition.
+        - Each line must be concise (max 20 words).
+        - Maximum 10 lines total.
+        - Preserve definitions, models, and key mechanisms.
+        
+        CONTENT:
+        ${chunk}
+                        `,
+                      },
+                    ],
+                  },
+                ],
+                config: {
+                  temperature: 0.2,
+                  maxOutputTokens: 1200,
+                },
+              });
 
-                            RULES (VERY IMPORTANT):
-                            - Output ONLY valid JSON.
-                            - Do NOT include markdown.
-                            - Do NOT include explanations or extra text.
-                            - Do NOT wrap the JSON in backticks.
-                            - Each slide must contain:
-                              - "heading": a short, clear title (string, no # symbols)
-                              - "points": an array of concise bullet points (strings)
-                            - Use relevant emojis inside headings or points where appropriate.
-                             - Ensure each slide has minimum 8 points.
-                            - Do NOT nest objects.
+              const parts = response.candidates?.[0].content?.parts || []
+              const rawText = parts.filter(p=>p.text).map(p=>p.text).join("").trim()
+              const tokensUsed = response.usageMetadata?.totalTokenCount || 0;
 
-                            JSON FORMAT:
-                            [
-                              {
-                                "heading": "Slide title here",
-                                "points": ["point 1", "point 2"]
-                              }
-                            ]
-                            
-                           
-                            DOCUMENT:
-                            ${pdfContent}`
+              return {rawText,tokensUsed}
 
-                        }
-                    ]
-                }
-            ],
-            config: {
-                temperature: 0.7,
-                maxOutputTokens: 1500
-            }
-        })
-
-        const rawText = response.text as string;
-        const extractJsonContent = extractJsonArray(rawText);
-        let slides = extractJsonContent ? safeParseJsonArray(extractJsonContent) : null;
-        let totalTokens = response.usageMetadata?.totalTokenCount || 0;
-        if (!slides || !validateSlides(slides)) {
-            const retry = await ai.models.generateContent({
-                model: process.env.MODEL!,
-                contents: [{ role: "user", parts: [{ text: retryPrompt(pdfContent) }] }],
-                config: { temperature: 0.2, maxOutputTokens: 1200 }
-            })
-
-            const retryExtracted = extractJsonArray(retry.text as string);
-            slides = retryExtracted ? safeParseJsonArray(retryExtracted) : null;
-            if (!Array.isArray(slides)) slides = null;
-            if (!slides || !validateSlides(slides)) {
-                return {
-                    success: false,
-                    status: 422,
-                    message: "AI returned malformed summary JSON",
-                    summary: null
-                };
-            }
-            totalTokens += retry.usageMetadata?.totalTokenCount || 0;
-        }
-
-        const slidesWithIdx = slides.map((s: any, i: number) => ({
-            idx: i,
-            heading: s.heading,
-            points: s.points,
-        }))
-
-        return {
-            success: true,
-            message: "Summary generated",
-            status: 200,
-            summary: slidesWithIdx as SummaryType[],
-            tokensUsed: response.usageMetadata?.totalTokenCount || 0
-        }
-
-    } catch (error: any | ApiError) {
-        console.log('Gemini API Error :', error);
-        return {
-            success: false,
-            status: error.status === 429 ? 429 : error.status === 400 ? 400 : 500,
-            message: error.status === 429
-                ? "Rate limit exceeded. Please try again later."
-                : error.message || "Error generating summary",
-            summary: null
+        } catch (error) {
+            console.error("Micro summarization error:", error);
+            throw new CustomError(500, "Micro summarization failed");
         }
     }
+    public async generateSlides(
+        notes: string,
+        targetSlides: number
+      ): Promise<{ slides: SummaryType[]; tokensUsed: number }> {
+        try {
+          const response = await this.ai.models.generateContent({
+            model: "gemini-2.5-flash",
+            contents: [
+              {
+                role: "user",
+                parts: [
+                  {
+                    text: `
+    You are an expert technical presentation designer.
+    
+    Using the condensed notes below, generate EXACTLY ${targetSlides} slides.
+    You MUST return exactly ${targetSlides} objects.
+    Do NOT exceed or reduce.
+    
+    STRICT RULES:
+    - Output ONLY valid JSON.
+    - Do NOT include markdown.
+    - Do NOT include explanations.
+    - Do NOT wrap JSON in backticks.
+    - Return exactly ${targetSlides} slide objects.
+    - Each slide must contain:
+      - "heading": short, clear title (no # symbols)
+      - "points": array of 4–6 concise bullet points
+    - Avoid repetition across slides.
+    - Distribute content evenly.
+    - Preserve technical accuracy.
+    - Use relevant emojis sparingly.
+    
+    JSON FORMAT:
+    [
+      {
+        "heading": "Slide title",
+        "points": ["Point 1", "Point 2"]
+      }
+    ]
+    
+    NOTES:
+    ${notes}
+                    `,
+                  },
+                ],
+              },
+            ],
+            config: {
+              temperature: 0.2,
+              maxOutputTokens: 4000,
+            },
+          });
+    
+          const parts = response.candidates?.[0]?.content?.parts || [];
+          const rawText = parts.filter((p) => p.text).map((p) => p.text).join("").trim();
+
+    
+          const tokensUsed = response.usageMetadata?.totalTokenCount || 0;
+
+          const slides = JSON.parse(rawText);
+
+
+      if (!Array.isArray(slides) || slides.length !== targetSlides) {
+        throw new Error("Slide count mismatch");
+      }
+    
+          return { slides, tokensUsed };
+        } catch (error) {
+          console.error("Slide generation error:", error);
+          throw new CustomError(500, "Slide generation failed");
+        }
+      }
+
 }

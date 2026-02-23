@@ -1,6 +1,6 @@
 import mongoose, { Document, Model, Schema, model } from "mongoose";
 
-interface Summary extends Document {
+export interface Summary extends Document {
     pdfUrl: string;
     fileName: string;
     createdAt: Date;
