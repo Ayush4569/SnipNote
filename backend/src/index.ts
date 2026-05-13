@@ -8,12 +8,12 @@ import { connectDB } from './database/db'
 import authRoutes from './routes/auth.route'
 import summaryRoutes from './routes/summary.route'
 import { webHookRouter, subscriptionRoutes } from './routes/subscription.route'
-import { CustomError, errorHandler } from './utils/apiError'
+import {  errorHandler } from './utils/apiError'
 import path from 'path'
 
 const app = express()
 const logDir = path.resolve(process.cwd(), 'logs')
-
+const PORT = process.env.PORT || 8000;
 fs.mkdirSync(logDir, { recursive: true })
 const logStream = fs.createWriteStream('./logs/access.log', { flags: 'a' })
 
@@ -50,20 +50,14 @@ app.use(express.urlencoded({ extended: true }))
 
 
 app.get('/', (_, res) => {
-  return res.status(200).send('Snipnote Backend is running!')
+  return res.status(200).send(`Handled by server running on port ${PORT}`)
 })
-app.get("/error", (req, res) => {
-  throw new CustomError(500,"Testing the error")
-});
-
 app.use('/api/auth', authRoutes)
 app.use('/api/summary', summaryRoutes)
 app.use('/api/subscriptions', subscriptionRoutes)
 
 app.use(errorHandler)
 
-
-
 app.listen(config.PORT, () => {
-  console.log(`Server running on http://localhost:${config.PORT}`)
+  console.log(`Server running on http://localhost:${PORT || 8000}`)
 })

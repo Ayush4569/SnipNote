@@ -6,7 +6,7 @@ import { queryClient } from "@/lib/tanstack";
 import { useUploadThing } from "@/lib/upload-thing";
 import { fileUploadSchema } from "@/schemas/upload.schema";
 import axios, { isAxiosError } from "axios";
-import { Loader2Icon, FileText, UploadCloud, Trash2 } from "lucide-react";
+import { Loader2Icon, FileText, UploadCloud, Trash2, CheckCheckIcon, CircleCheck, Ban } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useRef, useState, useCallback } from "react";
 import { toast } from "sonner";
@@ -24,10 +24,10 @@ export default function UploadForm() {
 
     const { startUpload } = useUploadThing('pdfUploader', {
         onClientUploadComplete: () => {
-            toast.success('File uploaded successfully', { icon: '✅' })
+            toast.success('File uploaded successfully', { icon: <CircleCheck className="text-green-500" /> })
         },
         onUploadError: () => {
-            toast.error('Error uploading file', { icon: '❌' })
+            toast.error('Error uploading file', { icon: <Ban className="text-red-500" /> })
         },
         onUploadBegin: () => {
             toast.info('Uploading file...', {
@@ -112,10 +112,10 @@ export default function UploadForm() {
             });
             if (data.success) {
                 toast.success(
-                    data.message || 'File summarized successfully', { icon: '✅', duration: 3000 }
+                    data.message || 'File summarized successfully', { icon: <CheckCheckIcon />, duration: 3000 }
                 );
-                // queryClient.invalidateQueries({ queryKey: ['summaries'] });
-                // router.push(`/summary/${data.summaryId}`);
+                queryClient.invalidateQueries({ queryKey: ['summaries'] });
+                router.push(`/summary/${data.summaryId}`);
             }
         } catch (error) {
             toast.error(

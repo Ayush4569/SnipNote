@@ -12,6 +12,8 @@ IMPORTANT:
 - No explanations
 - No trailing text
 - Use simple ASCII quotes only
+- Each slide MUST contain exactly 8 bullet points.
+- Be very detailed to ensure 8 points are generated for each slide.
 
 JSON FORMAT:
 [
