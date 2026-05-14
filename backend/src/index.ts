@@ -59,5 +59,5 @@ app.use('/api/subscriptions', subscriptionRoutes)
 app.use(errorHandler)
 
 app.listen(config.PORT, () => {
-  console.log(`Server running on http://localhost:${PORT || 8000}`)
+  console.log(`Server running on http://localhost:${PORT || 8000} !!`)
 })

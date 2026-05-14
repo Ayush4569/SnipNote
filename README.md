@@ -88,6 +88,29 @@ This project was built from scratch with an emphasis on **real-world SaaS archit
   - Retry prompt for invalid responses
   - Graceful failure states (no crashes)
 
+## 🛡️ Robust AI Infrastructure (Advanced)
+
+SnipNote leverages a sophisticated AI orchestration layer designed for high reliability and document complexity:
+
+- 🔄 **High-Availability Fallback Mechanism**
+  - Implements a multi-stage fallback pipeline using **Gemini 2.5-flash** as the primary engine.
+  - Automatically fails over to **Gemini 2.5-flash-lite** upon detecting `429 RESOURCE_EXHAUSTED` or `503 Service Unavailable` signals.
+  - Ensures uninterrupted service during peak API traffic.
+
+- 🧩 **Intelligent Chunking & Map-Reduce Pipeline**
+  - Engineered to bypass context window limitations for large-scale documents.
+  - **Hierarchical Processing**: Fragmatic semantic chunking breaks down long PDFs into manageable micro-segments, which are then compressed into dense technical notes before final synthesis into slides.
+  - Supports processing of high-density documents up to **55 pages** while maintaining thematic coherence.
+
+- 🏗️ **Global State Consistency & Transactional Recovery**
+  - Features a robust **State-Safety Wrapper** that manages summary lifecycles (Processing → Completed/Failed).
+  - Atomic database state transitions ensure that AI processing failures are caught globally, reverting UI states and providing precise error telemetry without manual intervention.
+
+- 📏 **Strict 8-Point Slide Architecture**
+  - Enforces a high-density information layout with exactly 8 points per slide.
+  - AI is prompted with strict constraints to ensure summaries are comprehensive, data-rich, and visually consistent across all PDF types.
+
+
 ---
 
 
