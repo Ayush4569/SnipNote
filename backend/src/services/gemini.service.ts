@@ -207,7 +207,8 @@ const PRIMARY_MODEL = "gemini-2.5-flash";
 const FALLBACK_MODEL = "gemini-2.5-flash-lite";
 
 export const summarizeTextWithGemini = async (
-    pdfContent: string
+    pdfContent: string,
+    targetSlides: number
 ): Promise<{
     success: boolean;
     status: number;
@@ -218,7 +219,7 @@ export const summarizeTextWithGemini = async (
     let totalTokens = 0;
 
     try {
-        return await executeSummarization(pdfContent, PRIMARY_MODEL);
+        return await executeSummarization(pdfContent, PRIMARY_MODEL, targetSlides);
     } catch (error: any) {
         const status = error?.status || error?.error?.status || error?.error?.code;
         const isRetryable = status === 429 || status === 'RESOURCE_EXHAUSTED' || status === 503 || status === 'UNAVAILABLE';
@@ -227,7 +228,7 @@ export const summarizeTextWithGemini = async (
             console.warn(`Primary model ${PRIMARY_MODEL} failed, retrying with ${FALLBACK_MODEL}...`);
             await sleep(1000);
             try {
-                return await executeSummarization(pdfContent, FALLBACK_MODEL);
+                return await executeSummarization(pdfContent, FALLBACK_MODEL, targetSlides);
             } catch (fallbackError: any) {
                 return formatError(fallbackError, totalTokens);
             }
@@ -236,7 +237,7 @@ export const summarizeTextWithGemini = async (
     }
 };
 
-async function executeSummarization(pdfContent: string, modelName: string) {
+async function executeSummarization(pdfContent: string, modelName: string, targetSlides: number) {
     let localTokens = 0;
     const model = ai.getGenerativeModel({ model: modelName });
     const response = await model.generateContent({
@@ -246,12 +247,13 @@ async function executeSummarization(pdfContent: string, modelName: string) {
                 text: `
         You are an expert technical summarizer.
         Convert the following document into a structured summary strictly in JSON format.
+        Generate EXACTLY ${targetSlides} slides.
         RULES:
         - Output ONLY valid JSON array.
         - No markdown, no backticks.
         - Format: [{"heading": "Title", "points": ["p1", "p2"]}]
-        - Each slide MUST contain exactly 8 bullet points.
-        - The summary should be extremely detailed to fulfill this requirement.
+        - Each slide MUST contain exactly 8 comprehensive, highly detailed bullet points.
+        - CRITICAL: You must summarize the entire document chronologically from beginning, through the middle, to the end. Ensure you distribute the slides/points evenly across all parts of the document so that no sections (especially the middle pages) are skipped or rushed.
         DOCUMENT:
         ${pdfContent}
         `}]
@@ -274,7 +276,7 @@ async function executeSummarization(pdfContent: string, modelName: string) {
 
     if (!slides || !validateSlides(slides)) {
         const retryResponse = await model.generateContent({
-            contents: [{ role: "user", parts: [{ text: retryPrompt(pdfContent) }] }],
+            contents: [{ role: "user", parts: [{ text: retryPrompt(pdfContent, targetSlides) }] }],
             generationConfig: { temperature: 0.2, maxOutputTokens: 4096 }
         });
         

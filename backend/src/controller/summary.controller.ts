@@ -86,7 +86,7 @@ const generateSummary = asyncHandler(async (req: Request, res: Response) => {
     }
 
     const paragraphs = structureText(refinedText);
-    const SAFE_SINGLE_PASS_LIMIT = 10000;
+    const SAFE_SINGLE_PASS_LIMIT = 120000;
     const shouldChunk = refinedText.length > SAFE_SINGLE_PASS_LIMIT;
 
     let finalSlides: SummaryType[] = [];
@@ -139,8 +139,9 @@ const generateSummary = asyncHandler(async (req: Request, res: Response) => {
         points: slide.points,
       }));
     } else {
+      const targetSlides = Math.min(18, Math.max(5, Math.ceil(pages / 2.5)));
       const { success, summary, status, message, tokensUsed } =
-        await summarizeTextWithGemini(refinedText);
+        await summarizeTextWithGemini(refinedText, targetSlides);
       totalTokens = tokensUsed || 0;
 
       if (!success || !summary) {

@@ -26,7 +26,8 @@ export default function UploadForm() {
         onClientUploadComplete: () => {
             toast.success('File uploaded successfully', { icon: <CircleCheck className="text-green-500" /> })
         },
-        onUploadError: () => {
+        onUploadError: (error) => {
+            console.log(error)
             toast.error('Error uploading file', { icon: <Ban className="text-red-500" /> })
         },
         onUploadBegin: () => {
@@ -60,6 +61,8 @@ export default function UploadForm() {
         const file = e.target.files?.[0];
         if (file && file.type === "application/pdf") {
             setSelectedFile(file);
+            console.log('file', file);
+
         } else {
             toast.error("Please upload a single PDF file.");
         }
@@ -99,6 +102,7 @@ export default function UploadForm() {
 
         const response = await startUpload([selectedFile]);
         if (!response || response.length === 0) {
+            console.log('Error uploading file: ', response);
             toast.error('Error uploading file');
             setLoading(false);
             return;
@@ -106,7 +110,7 @@ export default function UploadForm() {
         try {
             const { data } = await axios.post(`${process.env.NEXT_PUBLIC_BACKEND_URL}/summary`, {
                 fileUrl: response[0].ufsUrl,
-                fileName: response[0].serverData.name
+                fileName: response[0].name || selectedFile?.name
             }, {
                 withCredentials: true
             });
@@ -115,11 +119,13 @@ export default function UploadForm() {
                     data.message || 'File summarized successfully', { icon: <CheckCheckIcon />, duration: 3000 }
                 );
                 queryClient.invalidateQueries({ queryKey: ['summaries'] });
-                router.push(`/summary/${data.summaryId}`);
+                router.push(`/dashboard`);
             }
         } catch (error) {
             toast.error(
                 isAxiosError(error) ? error.response?.data.message : 'Error uploading file');
+            console.log('Error uploading file:', error);
+
             deleteFile(response[0].key);
         } finally {
             setSelectedFile(null);
@@ -179,7 +185,7 @@ export default function UploadForm() {
                             <div className="flex items-center gap-2 w-full">
                                 <FileText className="w-6 h-6 text-green-500" />
                                 <div className="flex flex-col">
-                                    <div className="font-medium text-gray-800 dark:text-gray-100 break-all">{selectedFile.name}</div>
+                                    <div className="font-medium text-gray-800 dark:text-gray-100 break-all">{selectedFile?.name}</div>
                                     <div className="text-xs text-gray-500">{(selectedFile.size / (1024 * 1024)).toFixed(2)} MB</div>
                                 </div>
                             </div>

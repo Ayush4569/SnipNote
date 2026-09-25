@@ -14,5 +14,5 @@
 *test.js
 
 # Build output
-/dist
+dist
 backend/src/utils/futureplans.ts

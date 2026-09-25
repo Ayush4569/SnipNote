@@ -12,7 +12,7 @@ export const fileRouter = {
   })
     .onUploadComplete(async ({ metadata, file }) => {
       
-      return {...file};
+      return { name: file.name, url: file.url, key: file.key };
     }),
 } satisfies FileRouter;
 
