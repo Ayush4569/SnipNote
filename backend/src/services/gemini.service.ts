@@ -207,44 +207,50 @@ const PRIMARY_MODEL = "gemini-2.5-flash";
 const FALLBACK_MODEL = "gemini-2.5-flash-lite";
 
 export const summarizeTextWithGemini = async (
-    pdfContent: string,
-    targetSlides: number
+  pdfContent: string,
+  targetSlides: number
 ): Promise<{
-    success: boolean;
-    status: number;
-    message: string;
-    summary: SummaryType[] | null;
-    tokensUsed?: number;
+  success: boolean;
+  status: number;
+  message: string;
+  summary: SummaryType[] | null;
+  tokensUsed?: number;
 }> => {
-    let totalTokens = 0;
+  let totalTokens = 0;
 
-    try {
-        return await executeSummarization(pdfContent, PRIMARY_MODEL, targetSlides);
-    } catch (error: any) {
-        const status = error?.status || error?.error?.status || error?.error?.code;
-        const isRetryable = status === 429 || status === 'RESOURCE_EXHAUSTED' || status === 503 || status === 'UNAVAILABLE';
+  try {
+    return await executeSummarization(pdfContent, PRIMARY_MODEL, targetSlides);
+  } catch (error: any) {
+    const status = error?.status || error?.error?.status || error?.error?.code;
+    const isRetryable = status === 429 || status === 'RESOURCE_EXHAUSTED' || status === 503 || status === 'UNAVAILABLE';
 
-        if (isRetryable) {
-            console.warn(`Primary model ${PRIMARY_MODEL} failed, retrying with ${FALLBACK_MODEL}...`);
-            await sleep(1000);
-            try {
-                return await executeSummarization(pdfContent, FALLBACK_MODEL, targetSlides);
-            } catch (fallbackError: any) {
-                return formatError(fallbackError, totalTokens);
-            }
-        }
-        return formatError(error, totalTokens);
+    if (isRetryable) {
+      console.warn(`Primary model ${PRIMARY_MODEL} failed, retrying with ${FALLBACK_MODEL}...`);
+      await sleep(1000);
+      try {
+        return await executeSummarization(pdfContent, FALLBACK_MODEL, targetSlides);
+      } catch (fallbackError: any) {
+        return formatError(fallbackError, totalTokens);
+      }
     }
+    return formatError(error, totalTokens);
+  }
 };
 
 async function executeSummarization(pdfContent: string, modelName: string, targetSlides: number) {
-    let localTokens = 0;
-    const model = ai.getGenerativeModel({ model: modelName });
-    const response = await model.generateContent({
-        contents: [{
-            role: "user",
-            parts: [{
-                text: `
+  let localTokens = 0;
+  const model = ai.getGenerativeModel({ model: modelName });
+  const geminiStart = performance.now();
+
+  console.log("\n--- Gemini Primary Call ---");
+  console.log(`Model: ${modelName}`);
+  console.log(`Input characters: ${pdfContent.length}`);
+  console.log(`Target slides: ${targetSlides}`);
+  const response = await model.generateContent({
+    contents: [{
+      role: "user",
+      parts: [{
+        text: `
         You are an expert technical summarizer.
         Convert the following document into a structured summary strictly in JSON format.
         Generate EXACTLY ${targetSlides} slides.
@@ -257,75 +263,106 @@ async function executeSummarization(pdfContent: string, modelName: string, targe
         DOCUMENT:
         ${pdfContent}
         `}]
-        }],
-        generationConfig: {
-            temperature: 0.2,
-            maxOutputTokens: 4096
-        }
+    }],
+    generationConfig: {
+      temperature: 0.2,
+      maxOutputTokens: 4096
+    }
+  });
+  const geminiTime = performance.now() - geminiStart;
+
+  console.log(`Gemini response time: ${geminiTime.toFixed(2)} ms`);
+
+  const result = await response.response;
+  const usage = result.usageMetadata;
+
+  const inputTokens = usage?.promptTokenCount || 0;
+  const outputTokens = usage?.candidatesTokenCount || 0;
+  const totalTokens = usage?.totalTokenCount || 0;
+
+  localTokens += totalTokens;
+
+  console.log(`Input tokens: ${inputTokens}`);
+  console.log(`Output tokens: ${outputTokens}`);
+  console.log(`Total tokens: ${totalTokens}`);
+  let rawText = result.text().trim();
+
+  if (rawText.startsWith('```json')) rawText = rawText.replace(/```json|```/g, '').trim();
+  else if (rawText.startsWith('```')) rawText = rawText.replace(/```/g, '').trim();
+
+  const extractedJson = extractJsonArray(rawText);
+  let slides = extractedJson ? safeParseJsonArray(extractedJson) : null;
+
+  if (!slides || !validateSlides(slides)) {
+    const retryStart = performance.now();
+
+    console.log("\n--- Gemini Retry Call ---");
+    const retryResponse = await model.generateContent({
+      contents: [{ role: "user", parts: [{ text: retryPrompt(pdfContent, targetSlides) }] }],
+      generationConfig: { temperature: 0.2, maxOutputTokens: 4096 }
     });
+    const retryTime = performance.now() - retryStart;
+    console.log(`Gemini retry time: ${retryTime.toFixed(2)} ms`);
 
-    const result = await response.response;
-    localTokens += result.usageMetadata?.totalTokenCount || 0;
-    let rawText = result.text().trim();
+    const retryResult = await retryResponse.response;
 
-    if (rawText.startsWith('```json')) rawText = rawText.replace(/```json|```/g, '').trim();
-    else if (rawText.startsWith('```')) rawText = rawText.replace(/```/g, '').trim();
+    const retryUsage = retryResult.usageMetadata;
 
-    const extractedJson = extractJsonArray(rawText);
-    let slides = extractedJson ? safeParseJsonArray(extractedJson) : null;
+    const retryInputTokens = retryUsage?.promptTokenCount || 0;
+    const retryOutputTokens = retryUsage?.candidatesTokenCount || 0;
+    const retryTotalTokens = retryUsage?.totalTokenCount || 0;
+
+    localTokens += retryTotalTokens;
+
+    console.log(`Retry input tokens: ${retryInputTokens}`);
+    console.log(`Retry output tokens: ${retryOutputTokens}`);
+    console.log(`Retry total tokens: ${retryTotalTokens}`);
+    
+    localTokens += retryResult.usageMetadata?.totalTokenCount || 0;
+    let retryRaw = retryResult.text().trim();
+
+    if (retryRaw.startsWith('```json')) retryRaw = retryRaw.replace(/```json|```/g, '').trim();
+    else if (retryRaw.startsWith('```')) retryRaw = retryRaw.replace(/```/g, '').trim();
+
+    const retryExtracted = extractJsonArray(retryRaw);
+    slides = retryExtracted ? safeParseJsonArray(retryExtracted) : null;
 
     if (!slides || !validateSlides(slides)) {
-        const retryResponse = await model.generateContent({
-            contents: [{ role: "user", parts: [{ text: retryPrompt(pdfContent, targetSlides) }] }],
-            generationConfig: { temperature: 0.2, maxOutputTokens: 4096 }
-        });
-        
-        const retryResult = await retryResponse.response;
-        localTokens += retryResult.usageMetadata?.totalTokenCount || 0;
-        let retryRaw = retryResult.text().trim();
-
-        if (retryRaw.startsWith('```json')) retryRaw = retryRaw.replace(/```json|```/g, '').trim();
-        else if (retryRaw.startsWith('```')) retryRaw = retryRaw.replace(/```/g, '').trim();
-
-        const retryExtracted = extractJsonArray(retryRaw);
-        slides = retryExtracted ? safeParseJsonArray(retryExtracted) : null;
-
-        if (!slides || !validateSlides(slides)) {
-            return {
-                success: false,
-                status: 422,
-                message: "The AI generated an invalid response format. Please try again.",
-                summary: null,
-                tokensUsed: localTokens
-            };
-        }
-    }
-
-    return {
-        success: true,
-        status: 200,
-        message: "Summary generated",
-        summary: slides as SummaryType[],
+      return {
+        success: false,
+        status: 422,
+        message: "The AI generated an invalid response format. Please try again.",
+        summary: null,
         tokensUsed: localTokens
-    };
+      };
+    }
+  }
+
+  return {
+    success: true,
+    status: 200,
+    message: "Summary generated",
+    summary: slides as SummaryType[],
+    tokensUsed: localTokens
+  };
 }
 
 function formatError(error: any, totalTokens: number) {
-    console.error("Gemini API Error:", error);
-    const status = error?.status || error?.error?.status || 500;
-    
-    let message = "Error generating summary";
-    if (status === 429 || status === 'RESOURCE_EXHAUSTED') {
-        message = "Rate limit exceeded. Gemini is currently busy, please try again in a moment.";
-    } else if (status === 503 || status === 'UNAVAILABLE') {
-        message = "AI service is currently overloaded. Please try again.";
-    }
-    
-    return {
-        success: false,
-        status: typeof status === 'number' ? status : 500,
-        message,
-        summary: null,
-        tokensUsed: totalTokens
-    };
+  console.error("Gemini API Error:", error);
+  const status = error?.status || error?.error?.status || 500;
+
+  let message = "Error generating summary";
+  if (status === 429 || status === 'RESOURCE_EXHAUSTED') {
+    message = "Rate limit exceeded. Gemini is currently busy, please try again in a moment.";
+  } else if (status === 503 || status === 'UNAVAILABLE') {
+    message = "AI service is currently overloaded. Please try again.";
+  }
+
+  return {
+    success: false,
+    status: typeof status === 'number' ? status : 500,
+    message,
+    summary: null,
+    tokensUsed: totalTokens
+  };
 }

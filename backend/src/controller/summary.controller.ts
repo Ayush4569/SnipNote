@@ -91,17 +91,14 @@ const generateSummary = asyncHandler(async (req: Request, res: Response) => {
 
     let finalSlides: SummaryType[] = [];
     let totalTokens = 0;
-
     if (shouldChunk) {
       const MAX_CHUNK_SIZE = 9000;
       const builder = new Chunking(paragraphs, MAX_CHUNK_SIZE);
-      const chunks = builder.buildChunks();
-
+      const chunks = builder.buildChunks()
       const MAX_CHUNKS = 12;
       const MAX_TOTAL_TOKENS = 45000;
       const microNotes: string[] = [];
       const micro = new ChunkSummarizer(process.env.GEMINI_API_KEY!);
-
       if (chunks.length > MAX_CHUNKS) {
         await failSummary(
           newSummary,

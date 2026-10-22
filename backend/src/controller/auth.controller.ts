@@ -75,11 +75,13 @@ const googleSignIn = asyncHandler(async (req: Request, res: Response) => {
         await newUser.save();
         res.cookie('refreshToken', refreshToken, refreshTokenOptions)
         res.cookie('accessToken', accessToken, accessTokenOptions)
-        return res.status(200).redirect(`${process.env.FRONTEND_URL}/auth/success`);
+        const frontendUrl = (process.env.FRONTEND_URL || 'http://localhost:3000').replace(/\/$/, '');
+        return res.redirect(`${frontendUrl}/auth/success?token=${accessToken}&refreshToken=${refreshToken}`);
 
     } catch (error) {
         console.error('Authentication error:', error);
-        res.status(500).redirect(`${process.env.FRONTEND_URL}/auth/error?message=Authentication failed`);
+        const frontendUrl = (process.env.FRONTEND_URL || 'http://localhost:3000').replace(/\/$/, '');
+        return res.redirect(`${frontendUrl}/auth/error?message=Authentication failed`);
     }
 })
 

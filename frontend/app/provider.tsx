@@ -4,6 +4,10 @@ import {Toaster} from "sonner"
 import AppInit from "./Appinit";
 import { QueryClientProvider } from "@tanstack/react-query";
 import { queryClient } from "@/lib/tanstack";
+import { setupAxios } from "@/lib/setupAxios";
+
+setupAxios();
+
 export default function Providers({
   children,
 }: {

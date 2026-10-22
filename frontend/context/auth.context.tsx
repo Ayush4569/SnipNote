@@ -24,6 +24,14 @@ export function AuthContextProvider(
         setStatus('authenticated')
     }
     const logout = () => {
+        if (typeof window !== "undefined") {
+            try {
+                localStorage.removeItem("accessToken");
+                localStorage.removeItem("refreshToken");
+            } catch {
+                // ignore
+            }
+        }
         setUser(null)
         setStatus('unauthenticated')
     }
