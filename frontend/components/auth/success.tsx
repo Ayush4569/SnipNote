@@ -7,7 +7,7 @@ import BgGradient from "../common/bg-gradient";
 import { Loader2 } from "lucide-react";
 import axios from "axios";
 import { useAuth } from "@/context/auth.context";
-import { setupAxios } from "@/lib/setupAxios";
+import { setupAxios, setStoredTokens, getStoredAccessToken, getStoredRefreshToken } from "@/lib/setupAxios";
 
 export default function AuthSuccessPage() {
   const router = useRouter();
@@ -22,23 +22,17 @@ export default function AuthSuccessPage() {
         const token = searchParams.get("token");
         const refreshToken = searchParams.get("refreshToken");
 
-        if (token) {
-          try {
-            localStorage.setItem("accessToken", token);
-          } catch {}
-        }
-        if (refreshToken) {
-          try {
-            localStorage.setItem("refreshToken", refreshToken);
-          } catch {}
+        if (token || refreshToken) {
+          setStoredTokens(token, refreshToken);
         }
 
-        const storedToken = token || (typeof window !== "undefined" ? localStorage.getItem("accessToken") : null);
+        const storedToken = token || getStoredAccessToken();
+        const storedRefreshToken = refreshToken || getStoredRefreshToken();
+
         const headers: Record<string, string> = {};
         if (storedToken) {
           headers["Authorization"] = `Bearer ${storedToken}`;
         }
-        const storedRefreshToken = refreshToken || (typeof window !== "undefined" ? localStorage.getItem("refreshToken") : null);
         if (storedRefreshToken) {
           headers["x-refresh-token"] = storedRefreshToken;
         }

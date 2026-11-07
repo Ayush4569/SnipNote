@@ -9,14 +9,19 @@ import { CustomError } from "../utils/apiError";
 import { Types } from "mongoose";
 import { Subscription } from "../models/subscription.model";
 
+function getCleanFrontendUrl(): string {
+    return (process.env.FRONTEND_URL || 'http://localhost:3000').replace(/\/+$/, '');
+}
+
 const googleSignIn = asyncHandler(async (req: Request, res: Response) => {
+    const frontendUrl = getCleanFrontendUrl();
     try {
         const code = req.query.code as string;
 
         if (!code || typeof code !== 'string') {
             res
                 .status(400)
-                .redirect(`${process.env.FRONTEND_URL}/auth/error?message=No authorization code received`);
+                .redirect(`${frontendUrl}/auth/error?message=${encodeURIComponent('No authorization code received')}`);
             return;
         }
 
@@ -25,7 +30,7 @@ const googleSignIn = asyncHandler(async (req: Request, res: Response) => {
         if (!tokens.id_token) {
             res
                 .status(400)
-                .redirect(`${process.env.FRONTEND_URL}/auth/error?message=No ID token received`);
+                .redirect(`${frontendUrl}/auth/error?message=${encodeURIComponent('No ID token received')}`);
             return;
         }
 
@@ -39,7 +44,7 @@ const googleSignIn = asyncHandler(async (req: Request, res: Response) => {
         if (!payload) {
             res
                 .status(400)
-                .redirect(`${process.env.FRONTEND_URL}/auth/error?message=Invalid token payload`);
+                .redirect(`${frontendUrl}/auth/error?message=${encodeURIComponent('Invalid token payload')}`);
             return
         }
         const userInfo: UserInfo = {
@@ -75,15 +80,57 @@ const googleSignIn = asyncHandler(async (req: Request, res: Response) => {
         await newUser.save();
         res.cookie('refreshToken', refreshToken, refreshTokenOptions)
         res.cookie('accessToken', accessToken, accessTokenOptions)
-        const frontendUrl = (process.env.FRONTEND_URL || 'http://localhost:3000').replace(/\/$/, '');
-        return res.redirect(`${frontendUrl}/auth/success?token=${accessToken}&refreshToken=${refreshToken}`);
+        return res.redirect(`${frontendUrl}/auth/success?token=${encodeURIComponent(accessToken)}&refreshToken=${encodeURIComponent(refreshToken)}`);
 
     } catch (error) {
         console.error('Authentication error:', error);
-        const frontendUrl = (process.env.FRONTEND_URL || 'http://localhost:3000').replace(/\/$/, '');
-        return res.redirect(`${frontendUrl}/auth/error?message=Authentication failed`);
+        return res.redirect(`${frontendUrl}/auth/error?message=${encodeURIComponent('Authentication failed')}`);
     }
 })
+
+const refreshAccessToken = asyncHandler(async (req: Request, res: Response) => {
+    const incomingRefreshToken =
+        req.cookies?.refreshToken || (req.headers["x-refresh-token"] as string);
+
+    if (!incomingRefreshToken) {
+        throw new CustomError(401, "No refresh token provided");
+    }
+
+    const decoded = decodeRefreshToken(incomingRefreshToken);
+    if (!decoded) {
+        throw new CustomError(401, "Invalid or expired refresh token");
+    }
+
+    const user = await User.findById(decoded.id);
+    if (!user || user.refreshToken !== incomingRefreshToken) {
+        throw new CustomError(401, "Refresh token mismatch or revoked");
+    }
+
+    const newAccessToken = generateAccessToken({
+        _id: user._id as Types.ObjectId,
+        name: user.name,
+        email: user.email,
+        picture: user.picture || "",
+        isPro: user.isPro,
+    });
+
+    res.cookie("accessToken", newAccessToken, accessTokenOptions);
+    res.setHeader("x-access-token", newAccessToken);
+
+    return res.status(200).json({
+        success: true,
+        accessToken: newAccessToken,
+        user: {
+            id: user._id,
+            name: user.name,
+            email: user.email,
+            picture: user.picture ?? "",
+            createdAt: user.createdAt,
+            isPro: user.isPro,
+        },
+        message: "Token refreshed successfully",
+    });
+});
 
 const getUser = asyncHandler(async (req: Request, res: Response) => {
     if (!req.user) {
@@ -124,14 +171,13 @@ const getUser = asyncHandler(async (req: Request, res: Response) => {
 })
 
 
-const logoutUser = async (req: Request, res: Response) => {
+const logoutUser = asyncHandler(async (req: Request, res: Response) => {
     const user = req.user;
-    if (!user) {
-        throw new CustomError(401, "Unauthorized")
+    if (user?.id) {
+        await User.findByIdAndUpdate(user.id, {
+            refreshToken: null
+        });
     }
-    await User.findByIdAndUpdate(user.id, {
-        refreshToken: null
-    });
     res
         .status(200)
         .clearCookie("accessToken", accessTokenOptions)
@@ -141,10 +187,11 @@ const logoutUser = async (req: Request, res: Response) => {
             message: "Logout successful",
         });
     return;
-}
+});
 
 export {
     googleSignIn,
     getUser,
+    refreshAccessToken,
     logoutUser
 };

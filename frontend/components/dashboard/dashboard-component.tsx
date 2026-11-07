@@ -1,124 +1,181 @@
-
 'use client';
+
 import BgGradient from '@/components/common/bg-gradient';
 import SummaryCard from '@/components/dashboard/summary-card';
 import { Button } from '@/components/ui/button';
 import { useAuth } from '@/context/auth.context';
 import { useGetSummaries } from '@/hooks/useGetSummaries';
-import { ArrowRight, Plus } from 'lucide-react';
+import { ArrowRight, FileCheck, Layers, Plus, Sparkles } from 'lucide-react';
 import Link from 'next/link';
 import EmptySummaryState from './empty-summary';
 import { MotionDiv, MotionH1, MotionP } from '../common/motion-helpers';
-import { itemVariants } from '@/lib/constants';
+import { containerVariants, itemVariants } from '@/lib/constants';
 import DashBoardLoadingSkeleton from '@/app/(post-login)/dashboard/loading';
 import { useRouter } from 'next/navigation';
 
 export default function DashboardComponent() {
     const { user, status } = useAuth();
-    const router = useRouter()
+    const router = useRouter();
     const { data: summaries = [], isPending, isError, error } = useGetSummaries(user?.id || '');
+
     if (status === 'unauthenticated') {
-        router.push('/auth/login')
-        return null
+        router.push('/auth/login');
+        return null;
     }
+
     if (isPending) {
         return <DashBoardLoadingSkeleton />;
     }
+
     if (isError) {
         return (
-            <div className='container mx-auto p-4'>
-                <p className='text-red-600'>Error loading summaries: {error?.message}</p>
+            <div className="container mx-auto p-6 max-w-4xl">
+                <div className="rounded-2xl border border-rose-200 bg-rose-50/80 p-6 text-center text-rose-700">
+                    <p className="font-semibold text-lg">Error loading summaries</p>
+                    <p className="text-sm mt-1 text-rose-600">{error?.message || 'Something went wrong.'}</p>
+                </div>
             </div>
         );
     }
 
+    const completedCount = summaries.filter(s => s.status === 'completed').length;
+
     return (
-        <main className="min-h-screen bg-gradient-to-br from-blue-100 via-violet-100 to-teal-100 relative overflow-x-hidden">
-            {/* Animated background pattern */}
+        <main className="min-h-screen bg-gradient-to-br from-blue-50/70 via-slate-50 to-teal-50/60 relative overflow-x-hidden">
+            {/* Background decoration */}
             <div className="absolute inset-0 pointer-events-none z-0">
-                <BgGradient className="from-teal-300 via-blue-200 to-violet-100 opacity-60 animate-gradient-move" />
+                <BgGradient className="from-teal-300/40 via-blue-200/40 to-violet-200/30 opacity-60 animate-gradient-move" />
             </div>
+
             <MotionDiv
-                initial={{ opacity: 0, y: 20 }}
-                animate={{ opacity: 1, y: 0 }}
-                transition={{ duration: 0.5 }}
-                className="container mx-auto flex flex-col gap-6 relative z-10"
+                variants={containerVariants}
+                initial="hidden"
+                animate="visible"
+                className="container mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-8 sm:py-14 relative z-10 flex flex-col gap-8"
             >
-                <div className="px-2 py-10 sm:py-20">
-                    <div className="flex gap-4 mb-8 justify-between items-center flex-wrap">
-                        <div className="flex flex-col gap-2">
-                            <MotionH1
-                                variants={itemVariants}
-                                initial="hidden"
-                                whileInView="visible"
-                                className="sm:text-5xl text-3xl font-extrabold tracking-tight bg-gradient-to-r from-teal-700 to-violet-900 bg-clip-text text-transparent font-serif drop-shadow-lg"
-                            >
-                                Your Summaries
-                            </MotionH1>
-                            <MotionP
-                                variants={itemVariants}
-                                initial="hidden"
-                                whileInView="visible"
-                                className="text-blue-700 font-mono text-lg"
-                            >
-                                Transform your PDFs into concise, actionable insights
-                            </MotionP>
+                {/* Header section */}
+                <div className="flex flex-col gap-6 md:flex-row md:items-end md:justify-between">
+                    <div className="flex flex-col gap-2 max-w-2xl">
+                        <div className="inline-flex items-center gap-2 self-start rounded-full bg-teal-50 px-3 py-1 text-xs font-semibold text-teal-700 ring-1 ring-teal-200/80">
+                            <Sparkles className="h-3.5 w-3.5 text-teal-600" />
+                            <span>Workspace Overview</span>
                         </div>
-                        <MotionDiv
+                        <MotionH1
                             variants={itemVariants}
-                            initial="hidden"
-                            animate="visible"
-                            whileHover={{ scale: 1.05 }}
-                            className={`self-start ${!user?.canGeneratePdf ? 'hidden' : 'block'}`}
+                            className="text-3xl sm:text-4xl lg:text-5xl font-extrabold tracking-tight text-slate-900 font-sans"
                         >
-                            <Button
-                                variant={'link'}
-                                className="bg-gradient-to-r from-teal-500 to-violet-600 hover:from-teal-600 hover:to-violet-700 hover:scale-105 transition-all duration-300 group hover:no-underline shadow-xl rounded-full px-6 py-2 text-lg"
+                            Your Summaries
+                        </MotionH1>
+                        <MotionP
+                            variants={itemVariants}
+                            className="text-slate-600 text-sm sm:text-base font-normal leading-relaxed"
+                        >
+                            Review, search, and navigate through your AI-compressed technical slides.
+                        </MotionP>
+                    </div>
+
+                    <MotionDiv
+                        variants={itemVariants}
+                        whileHover={{ scale: 1.02 }}
+                        whileTap={{ scale: 0.98 }}
+                        className="self-start md:self-end"
+                    >
+                        <Button
+                            asChild
+                            className="bg-gradient-to-r from-teal-600 to-emerald-600 hover:from-teal-700 hover:to-emerald-700 text-white font-semibold rounded-xl px-5 py-2.5 shadow-md shadow-teal-700/10 transition-all duration-200"
+                        >
+                            <Link href="/upload" className="flex items-center gap-2">
+                                <Plus className="w-4 h-4" />
+                                <span>New Summary</span>
+                            </Link>
+                        </Button>
+                    </MotionDiv>
+                </div>
+
+                {/* Quick metrics bar */}
+                <MotionDiv variants={itemVariants} className="grid grid-cols-2 sm:grid-cols-3 gap-3 sm:gap-4">
+                    <div className="rounded-2xl border border-slate-200/80 bg-white/80 backdrop-blur-xs p-4 sm:p-5 shadow-xs">
+                        <div className="flex items-center gap-3">
+                            <div className="p-2.5 rounded-xl bg-teal-50 text-teal-700">
+                                <Layers className="w-5 h-5 text-teal-600" />
+                            </div>
+                            <div>
+                                <p className="text-xs font-medium text-slate-500 uppercase tracking-wider">Total Summaries</p>
+                                <p className="text-xl sm:text-2xl font-bold text-slate-900 mt-0.5">{summaries.length}</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div className="rounded-2xl border border-slate-200/80 bg-white/80 backdrop-blur-xs p-4 sm:p-5 shadow-xs">
+                        <div className="flex items-center gap-3">
+                            <div className="p-2.5 rounded-xl bg-emerald-50 text-emerald-700">
+                                <FileCheck className="w-5 h-5 text-emerald-600" />
+                            </div>
+                            <div>
+                                <p className="text-xs font-medium text-slate-500 uppercase tracking-wider">Completed</p>
+                                <p className="text-xl sm:text-2xl font-bold text-slate-900 mt-0.5">{completedCount}</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div className="col-span-2 sm:col-span-1 rounded-2xl border border-slate-200/80 bg-white/80 backdrop-blur-xs p-4 sm:p-5 shadow-xs flex items-center justify-between">
+                        <div>
+                            <p className="text-xs font-medium text-slate-500 uppercase tracking-wider">Plan Status</p>
+                            <p className="text-base sm:text-lg font-bold text-slate-900 mt-0.5">
+                                {user?.isPro ? 'Pro Member' : 'Basic Plan'}
+                            </p>
+                        </div>
+                        {!user?.isPro && (
+                            <Link
+                                href="/#pricing"
+                                className="text-xs font-semibold text-teal-700 hover:text-teal-800 underline underline-offset-2 flex items-center gap-1"
                             >
-                                <Link href="/upload" className="flex items-center text-white font-semibold">
-                                    <Plus className="w-5 h-5 mr-2" />
-                                    New Summary
+                                Upgrade
+                                <ArrowRight className="w-3.5 h-3.5" />
+                            </Link>
+                        )}
+                    </div>
+                </MotionDiv>
+
+                {/* Limit reached warning if applicable */}
+                {user && !user.canGeneratePdf && (
+                    <MotionDiv
+                        variants={itemVariants}
+                        className="rounded-2xl border border-amber-200/80 bg-amber-50/80 backdrop-blur-xs p-4 sm:p-5 text-amber-900 shadow-xs"
+                    >
+                        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-3 text-sm">
+                            <p>
+                                <span className="font-semibold">Upload limit reached:</span> You have reached the monthly quota for your current plan.
+                            </p>
+                            <Button
+                                asChild
+                                size="sm"
+                                variant="outline"
+                                className="self-start sm:self-auto border-amber-300 text-amber-900 hover:bg-amber-100"
+                            >
+                                <Link href="/#pricing" className="inline-flex items-center gap-1.5 font-medium">
+                                    <span>Upgrade to Pro</span>
+                                    <ArrowRight className="w-3.5 h-3.5" />
                                 </Link>
                             </Button>
-                        </MotionDiv>
-                    </div>
-                    {user && !user.canGeneratePdf && (
-                        <MotionDiv
-                            variants={itemVariants}
-                            initial="hidden"
-                            animate="visible"
-                            whileHover={{ scale: 1.05 }}
-                            className="mb-6"
-                        >
-                            <div className="border bg-blue-50 border-teal-200 rounded-xl p-4 text-teal-800 font-mono shadow-md backdrop-blur-md">
-                                <p className="text-sm">
-                                    You&apos;ve reached the limit of uploads on your plan.{' '}
-                                    <Link
-                                        href="/#pricing"
-                                        className="text-teal-800 underline font-medium underline-offset-4 inline-flex items-center"
-                                    >
-                                        Click here to upgrade to Pro{' '}
-                                        <ArrowRight className="h-4 w-4 inline-block" />
-                                    </Link>{' '}
-                                    for more uploads.
-                                </p>
-                            </div>
-                        </MotionDiv>
-                    )}
-                    {summaries.length === 0 ? (
-                        <EmptySummaryState />
-                    ) : (
-                        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8 sm:gap-10">
-                            {summaries?.map((item) => (
-                                <SummaryCard key={item._id} {...item} />
-                            ))}
                         </div>
-                    )}
-                </div>
-            </MotionDiv>
+                    </MotionDiv>
+                )}
 
+                {/* Document grid */}
+                {summaries.length === 0 ? (
+                    <EmptySummaryState />
+                ) : (
+                    <MotionDiv
+                        variants={containerVariants}
+                        className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5 sm:gap-6"
+                    >
+                        {summaries.map((item) => (
+                            <SummaryCard key={item._id} {...item} />
+                        ))}
+                    </MotionDiv>
+                )}
+            </MotionDiv>
         </main>
     );
 }
-
-

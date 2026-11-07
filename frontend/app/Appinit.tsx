@@ -13,8 +13,9 @@ export default function AppInit() {
       setLoading();
 
       try {
+        const url = (process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:8000/api").replace(/\/+$/, "");
         const { data } = await axios.get(
-          `${process.env.NEXT_PUBLIC_BACKEND_URL}/auth`,
+          `${url}/auth`,
           { withCredentials: true }
         );
 

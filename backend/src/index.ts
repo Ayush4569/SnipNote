@@ -33,22 +33,34 @@ app.use(
     { stream: logStream }
   )
 )
-const allowedOrigins = [
+const rawOrigins = [
   'http://localhost:3000',
   'http://127.0.0.1:3000',
   'https://snipnote-v1.vercel.app',
-  ...(process.env.FRONTEND_URL ? [process.env.FRONTEND_URL.replace(/\/$/, '')] : []),
+  ...(process.env.FRONTEND_URL
+    ? process.env.FRONTEND_URL.split(',').map((url) => url.trim().replace(/\/$/, ''))
+    : []),
 ];
+const allowedOrigins = Array.from(new Set(rawOrigins.filter(Boolean)));
 
 app.use(cors({
-  origin: allowedOrigins,
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH'],
+  origin: (origin, callback) => {
+    if (!origin) return callback(null, true);
+    if (
+      allowedOrigins.includes(origin) ||
+      (process.env.NODE_ENV !== 'production' && origin.includes('localhost')) ||
+      /^https:\/\/snipnote.*\.vercel\.app$/.test(origin)
+    ) {
+      callback(null, true);
+    } else {
+      callback(new Error(`Origin ${origin} not allowed by CORS`));
+    }
+  },
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'PATCH', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization', 'x-refresh-token'],
   exposedHeaders: ['x-access-token'],
   credentials: true,
 }))
-
-// app.use(logger)
 
 app.use('/api/subscriptions/webhook', webHookRouter)
 

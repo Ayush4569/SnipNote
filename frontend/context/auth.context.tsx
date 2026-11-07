@@ -1,5 +1,6 @@
 import { User } from "@/types/user";
 import { ReactNode, createContext, useState, useContext } from "react";
+import { clearStoredTokens } from "@/lib/setupAxios";
 
 type Status = 'authenticated' | 'unauthenticated' | 'loading';
 
@@ -24,14 +25,7 @@ export function AuthContextProvider(
         setStatus('authenticated')
     }
     const logout = () => {
-        if (typeof window !== "undefined") {
-            try {
-                localStorage.removeItem("accessToken");
-                localStorage.removeItem("refreshToken");
-            } catch {
-                // ignore
-            }
-        }
+        clearStoredTokens();
         setUser(null)
         setStatus('unauthenticated')
     }

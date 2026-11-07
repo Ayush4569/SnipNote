@@ -10,5 +10,9 @@ const envSchema = z.object({
   NODE_ENV: z.enum(["development", "production"]).default("development"),
   GOOGLE_CLIENT_ID: z.string().min(1),
   GOOGLE_CLIENT_SECRET: z.string().min(1),
+  GEMINI_API_KEY: z.string().optional(),
+  PRIMARY_MODEL: z.string().default("gemini-3.6-flash"),
+  FALLBACK_MODEL: z.string().default("gemini-3.5-flash-lite"),
+  MODEL: z.string().optional(),
 });
 export const config = envSchema.parse(process.env);

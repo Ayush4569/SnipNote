@@ -34,27 +34,26 @@ export const plans: Plan[] = [
 ]
 
 export const containerVariants = {
-    hidden: { opacity: 0},
+    hidden: { opacity: 0 },
     visible: {
         opacity: 1,
         transition: {
-            staggerChildren: 0.2,
-            delayChildren: 0.1,
+            staggerChildren: 0.08,
+            delayChildren: 0.05,
         },
     },
 }
 
 export const itemVariants = {
-    hidden: { opacity: 0, y: 20 },
+    hidden: { opacity: 0, y: 16 },
     visible: { 
-        opacity: 1, 
+        opacity: 1,
+        y: 0,
         transition: {
-            type: "spring" as const,
-            damping: 15,
-            stiffness: 50,
-            duration: 0.8,
+            duration: 0.35,
+            ease: "easeOut" as const,
         },
-     },
+    },
 }
 
 export const demoSummary:SummarySlide[] = [

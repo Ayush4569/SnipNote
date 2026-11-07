@@ -204,7 +204,7 @@ const getSummary = asyncHandler(async (req: Request, res: Response) => {
   const summary = await Summary.findOne({
     _id: id,
     userId: req.user.id,
-  }).select("-__v -userId");
+  }).select("-__v -userId -tokenUsed");
   if (!summary) {
     throw new CustomError(404, "Summary not found");
   }
@@ -245,7 +245,7 @@ const getAllSummaries = asyncHandler(async (req: Request, res: Response) => {
   const summaries = await Summary.find({
     userId: req.user.id,
   })
-    .select("-__v -userId")
+    .select("-__v -userId -tokenUsed")
     .sort({ createdAt: -1 });
 
   return res.status(200).json({

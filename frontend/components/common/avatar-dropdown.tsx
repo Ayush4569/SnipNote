@@ -22,21 +22,16 @@ export function AvatarDropDown({ children }: { children: React.ReactNode }) {
 
   const handleLogOut = async () => {
     try {
-      const res = await axios.post(`${process.env.NEXT_PUBLIC_BACKEND_URL}/auth/logout`, null, {
+      const url = (process.env.NEXT_PUBLIC_BACKEND_URL || "http://localhost:8000/api").replace(/\/+$/, "");
+      await axios.post(`${url}/auth/logout`, null, {
         withCredentials: true
       });
-      if (res.data.success) {
-        logout()
-        toast.success("Logged out successfully.");
-        router.push("/auth/login");
-      }
+      toast.success("Logged out successfully.");
     } catch (error) {
-      console.error("Failed to logout:", error);
-      if (error instanceof AxiosError) {
-        toast.error(error.response?.data.message);
-      } else {
-        toast.error("unexpected error ");
-      }
+      console.error("Failed to logout on server:", error);
+    } finally {
+      logout();
+      router.push("/auth/login");
     }
   }
   return (
